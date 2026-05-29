@@ -14,16 +14,217 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          app_name: string
+          app_short_name: string
+          auth_wallpaper_url: string | null
+          ea_logo_url: string | null
+          ea_name: string
+          id: number
+          theme_accent: string
+          updated_at: string
+        }
+        Insert: {
+          app_name?: string
+          app_short_name?: string
+          auth_wallpaper_url?: string | null
+          ea_logo_url?: string | null
+          ea_name?: string
+          id?: number
+          theme_accent?: string
+          updated_at?: string
+        }
+        Update: {
+          app_name?: string
+          app_short_name?: string
+          auth_wallpaper_url?: string | null
+          ea_logo_url?: string | null
+          ea_name?: string
+          id?: number
+          theme_accent?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          is_broadcast: boolean
+          read_at: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_broadcast?: boolean
+          read_at?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_broadcast?: boolean
+          read_at?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          country_code: string | null
+          created_at: string
+          email: string | null
+          id: string
+          mt4_broker: string | null
+          mt4_login: string | null
+          mt4_password: string | null
+          mt4_server: string | null
+          mt5_broker: string | null
+          mt5_login: string | null
+          mt5_password: string | null
+          mt5_server: string | null
+          name: string | null
+          phone: string | null
+          plan: Database["public"]["Enums"]["plan_tier"]
+          status: Database["public"]["Enums"]["account_status"]
+          surname: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          country_code?: string | null
+          created_at?: string
+          email?: string | null
+          id: string
+          mt4_broker?: string | null
+          mt4_login?: string | null
+          mt4_password?: string | null
+          mt4_server?: string | null
+          mt5_broker?: string | null
+          mt5_login?: string | null
+          mt5_password?: string | null
+          mt5_server?: string | null
+          name?: string | null
+          phone?: string | null
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          status?: Database["public"]["Enums"]["account_status"]
+          surname?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          country_code?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          mt4_broker?: string | null
+          mt4_login?: string | null
+          mt4_password?: string | null
+          mt4_server?: string | null
+          mt5_broker?: string | null
+          mt5_login?: string | null
+          mt5_password?: string | null
+          mt5_server?: string | null
+          name?: string | null
+          phone?: string | null
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          status?: Database["public"]["Enums"]["account_status"]
+          surname?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      signals: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          entry: number
+          id: string
+          pair: string
+          reason: string | null
+          side: Database["public"]["Enums"]["signal_side"]
+          status: Database["public"]["Enums"]["signal_status"]
+          stop_loss: number
+          take_profit: number
+          tp_percent: number
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          entry: number
+          id?: string
+          pair: string
+          reason?: string | null
+          side: Database["public"]["Enums"]["signal_side"]
+          status?: Database["public"]["Enums"]["signal_status"]
+          stop_loss: number
+          take_profit: number
+          tp_percent?: number
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          entry?: number
+          id?: string
+          pair?: string
+          reason?: string | null
+          side?: Database["public"]["Enums"]["signal_side"]
+          status?: Database["public"]["Enums"]["signal_status"]
+          stop_loss?: number
+          take_profit?: number
+          tp_percent?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      account_status: "pending" | "approved" | "blocked"
+      app_role: "admin" | "user"
+      plan_tier: "none" | "lite" | "pro" | "premium"
+      signal_side: "BUY" | "SELL"
+      signal_status: "active" | "tp_hit" | "sl_hit" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +351,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_status: ["pending", "approved", "blocked"],
+      app_role: ["admin", "user"],
+      plan_tier: ["none", "lite", "pro", "premium"],
+      signal_side: ["BUY", "SELL"],
+      signal_status: ["active", "tp_hit", "sl_hit", "cancelled"],
+    },
   },
 } as const
