@@ -49,10 +49,10 @@ export const refreshSignals = createServerFn({ method: "POST" }).handler(async (
       const prev9 = e9.at(-2)!; const prev21 = e21.at(-2)!;
       const cur9 = e9.at(-1)!; const cur21 = e21.at(-1)!;
 
-      let side: "buy" | "sell" | null = null;
+      let side: "BUY" | "SELL" | null = null;
       let reason = "";
-      if (prev9 <= prev21 && cur9 > cur21) { side = "buy"; reason = "EMA9 crossed above EMA21 (H1)"; }
-      else if (prev9 >= prev21 && cur9 < cur21) { side = "sell"; reason = "EMA9 crossed below EMA21 (H1)"; }
+      if (prev9 <= prev21 && cur9 > cur21) { side = "BUY"; reason = "EMA9 crossed above EMA21 (H1)"; }
+      else if (prev9 >= prev21 && cur9 < cur21) { side = "SELL"; reason = "EMA9 crossed below EMA21 (H1)"; }
 
       if (!side) { results.push({ pair: p.pair, action: "no_crossover" }); continue; }
 
@@ -64,8 +64,8 @@ export const refreshSignals = createServerFn({ method: "POST" }).handler(async (
       const tpDist = p.pip * p.tpPips;
       const slDist = p.pip * p.slPips;
       const entry = last;
-      const tp = side === "buy" ? entry + tpDist : entry - tpDist;
-      const sl = side === "buy" ? entry - slDist : entry + slDist;
+      const tp = side === "BUY" ? entry + tpDist : entry - tpDist;
+      const sl = side === "BUY" ? entry - slDist : entry + slDist;
 
       const { error } = await supabaseAdmin.from("signals").insert({
         pair: p.pair, side, entry, take_profit: tp, stop_loss: sl, reason, status: "active", tp_percent: 0,
