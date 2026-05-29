@@ -29,7 +29,9 @@ export const updateUser = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const patch: { status?: "pending" | "approved" | "blocked"; plan?: "none" | "lite" | "pro" | "premium"; updated_at: string } = {
+      updated_at: new Date().toISOString(),
+    };
     if (data.status) patch.status = data.status;
     if (data.plan) patch.plan = data.plan;
     const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", data.userId);

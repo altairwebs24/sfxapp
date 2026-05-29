@@ -100,8 +100,9 @@ export const closeSignal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: roles } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
     if (!roles?.some((r) => r.role === "admin")) throw new Error("Forbidden");
+    const newStatus = data.tpPercent >= 0 ? "tp_hit" : "sl_hit";
     const { error } = await supabaseAdmin.from("signals")
-      .update({ status: "closed", closed_at: new Date().toISOString(), tp_percent: data.tpPercent })
+      .update({ status: newStatus, closed_at: new Date().toISOString(), tp_percent: data.tpPercent })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
