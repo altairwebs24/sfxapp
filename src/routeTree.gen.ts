@@ -18,6 +18,7 @@ import { Route as AppSignalsRouteImport } from './routes/_app/signals'
 import { Route as AppScannerRouteImport } from './routes/_app/scanner'
 import { Route as AppInboxRouteImport } from './routes/_app/inbox'
 import { Route as AppEaRouteImport } from './routes/_app/ea'
+import { Route as AppAdminRouteImport } from './routes/_app/admin'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as ApiPublicCronSignalsRouteImport } from './routes/api/public/cron.signals'
 
@@ -65,6 +66,11 @@ const AppEaRoute = AppEaRouteImport.update({
   path: '/ea',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/plans': typeof PlansRoute
   '/register': typeof RegisterRoute
   '/account': typeof AppAccountRoute
+  '/admin': typeof AppAdminRoute
   '/ea': typeof AppEaRoute
   '/inbox': typeof AppInboxRoute
   '/scanner': typeof AppScannerRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/plans': typeof PlansRoute
   '/register': typeof RegisterRoute
   '/account': typeof AppAccountRoute
+  '/admin': typeof AppAdminRoute
   '/ea': typeof AppEaRoute
   '/inbox': typeof AppInboxRoute
   '/scanner': typeof AppScannerRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/plans': typeof PlansRoute
   '/register': typeof RegisterRoute
   '/_app/account': typeof AppAccountRoute
+  '/_app/admin': typeof AppAdminRoute
   '/_app/ea': typeof AppEaRoute
   '/_app/inbox': typeof AppInboxRoute
   '/_app/scanner': typeof AppScannerRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/register'
     | '/account'
+    | '/admin'
     | '/ea'
     | '/inbox'
     | '/scanner'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/register'
     | '/account'
+    | '/admin'
     | '/ea'
     | '/inbox'
     | '/scanner'
@@ -146,6 +157,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/register'
     | '/_app/account'
+    | '/_app/admin'
     | '/_app/ea'
     | '/_app/inbox'
     | '/_app/scanner'
@@ -227,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEaRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin': {
+      id: '/_app/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/account': {
       id: '/_app/account'
       path: '/account'
@@ -246,6 +265,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
+  AppAdminRoute: typeof AppAdminRoute
   AppEaRoute: typeof AppEaRoute
   AppInboxRoute: typeof AppInboxRoute
   AppScannerRoute: typeof AppScannerRoute
@@ -255,6 +275,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
+  AppAdminRoute: AppAdminRoute,
   AppEaRoute: AppEaRoute,
   AppInboxRoute: AppInboxRoute,
   AppScannerRoute: AppScannerRoute,
@@ -274,3 +295,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
