@@ -18,7 +18,9 @@ import { Route as AppSignalsRouteImport } from './routes/_app/signals'
 import { Route as AppScannerRouteImport } from './routes/_app/scanner'
 import { Route as AppInboxRouteImport } from './routes/_app/inbox'
 import { Route as AppEaRouteImport } from './routes/_app/ea'
+import { Route as AppAdminRouteImport } from './routes/_app/admin'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
+import { Route as ApiPublicCronSignalsRouteImport } from './routes/api/public/cron.signals'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -64,10 +66,20 @@ const AppEaRoute = AppEaRouteImport.update({
   path: '/ea',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiPublicCronSignalsRoute = ApiPublicCronSignalsRouteImport.update({
+  id: '/api/public/cron/signals',
+  path: '/api/public/cron/signals',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -76,21 +88,25 @@ export interface FileRoutesByFullPath {
   '/plans': typeof PlansRoute
   '/register': typeof RegisterRoute
   '/account': typeof AppAccountRoute
+  '/admin': typeof AppAdminRoute
   '/ea': typeof AppEaRoute
   '/inbox': typeof AppInboxRoute
   '/scanner': typeof AppScannerRoute
   '/signals': typeof AppSignalsRoute
+  '/api/public/cron/signals': typeof ApiPublicCronSignalsRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/plans': typeof PlansRoute
   '/register': typeof RegisterRoute
   '/account': typeof AppAccountRoute
+  '/admin': typeof AppAdminRoute
   '/ea': typeof AppEaRoute
   '/inbox': typeof AppInboxRoute
   '/scanner': typeof AppScannerRoute
   '/signals': typeof AppSignalsRoute
   '/': typeof AppIndexRoute
+  '/api/public/cron/signals': typeof ApiPublicCronSignalsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -99,11 +115,13 @@ export interface FileRoutesById {
   '/plans': typeof PlansRoute
   '/register': typeof RegisterRoute
   '/_app/account': typeof AppAccountRoute
+  '/_app/admin': typeof AppAdminRoute
   '/_app/ea': typeof AppEaRoute
   '/_app/inbox': typeof AppInboxRoute
   '/_app/scanner': typeof AppScannerRoute
   '/_app/signals': typeof AppSignalsRoute
   '/_app/': typeof AppIndexRoute
+  '/api/public/cron/signals': typeof ApiPublicCronSignalsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -113,21 +131,25 @@ export interface FileRouteTypes {
     | '/plans'
     | '/register'
     | '/account'
+    | '/admin'
     | '/ea'
     | '/inbox'
     | '/scanner'
     | '/signals'
+    | '/api/public/cron/signals'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/plans'
     | '/register'
     | '/account'
+    | '/admin'
     | '/ea'
     | '/inbox'
     | '/scanner'
     | '/signals'
     | '/'
+    | '/api/public/cron/signals'
   id:
     | '__root__'
     | '/_app'
@@ -135,11 +157,13 @@ export interface FileRouteTypes {
     | '/plans'
     | '/register'
     | '/_app/account'
+    | '/_app/admin'
     | '/_app/ea'
     | '/_app/inbox'
     | '/_app/scanner'
     | '/_app/signals'
     | '/_app/'
+    | '/api/public/cron/signals'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -147,6 +171,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PlansRoute: typeof PlansRoute
   RegisterRoute: typeof RegisterRoute
+  ApiPublicCronSignalsRoute: typeof ApiPublicCronSignalsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -214,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEaRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin': {
+      id: '/_app/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/account': {
       id: '/_app/account'
       path: '/account'
@@ -221,11 +253,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/cron/signals': {
+      id: '/api/public/cron/signals'
+      path: '/api/public/cron/signals'
+      fullPath: '/api/public/cron/signals'
+      preLoaderRoute: typeof ApiPublicCronSignalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
+  AppAdminRoute: typeof AppAdminRoute
   AppEaRoute: typeof AppEaRoute
   AppInboxRoute: typeof AppInboxRoute
   AppScannerRoute: typeof AppScannerRoute
@@ -235,6 +275,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
+  AppAdminRoute: AppAdminRoute,
   AppEaRoute: AppEaRoute,
   AppInboxRoute: AppInboxRoute,
   AppScannerRoute: AppScannerRoute,
@@ -249,17 +290,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   PlansRoute: PlansRoute,
   RegisterRoute: RegisterRoute,
+  ApiPublicCronSignalsRoute: ApiPublicCronSignalsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

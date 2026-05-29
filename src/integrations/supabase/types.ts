@@ -77,6 +77,39 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_requests: {
+        Row: {
+          amount_zar: number
+          approved_at: string | null
+          created_at: string
+          id: string
+          note: string | null
+          plan: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_zar: number
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          plan: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_zar?: number
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          plan?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
