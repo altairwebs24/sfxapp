@@ -1,0 +1,23 @@
+// Top 20 country codes for the SFX selector. South Africa is the default.
+export const COUNTRIES = [
+  { code: "+27", flag: "🇿🇦", name: "South Africa" },
+  { code: "+1",  flag: "🇺🇸", name: "United States" },
+  { code: "+44", flag: "🇬🇧", name: "United Kingdom" },
+  { code: "+234", flag: "🇳🇬", name: "Nigeria" },
+  { code: "+254", flag: "🇰🇪", name: "Kenya" },
+  { code: "+233", flag: "🇬🇭", name: "Ghana" },
+  { code: "+263", flag: "🇿🇼", name: "Zimbabwe" },
+  { code: "+260", flag: "🇿🇲", name: "Zambia" },
+  { code: "+256", flag: "🇺🇬", name: "Uganda" },
+  { code: "+91", flag: "🇮🇳", name: "India" },
+  { code: "+61", flag: "🇦🇺", name: "Australia" },
+  { code: "+971", flag: "🇦🇪", name: "UAE" },
+  { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+49", flag: "🇩🇪", name: "Germany" },
+  { code: "+33", flag: "🇫🇷", name: "France" },
+  { code: "+34", flag: "🇪🇸", name: "Spain" },
+  { code: "+39", flag: "🇮🇹", name: "Italy" },
+  { code: "+55", flag: "🇧🇷", name: "Brazil" },
+  { code: "+52", flag: "🇲🇽", name: "Mexico" },
+  { code: "+81", flag: "🇯🇵", name: "Japan" },
+];
