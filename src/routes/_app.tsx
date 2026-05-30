@@ -1,74 +1,60 @@
-import { createFileRoute, Outlet, redirect, Link, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
-import { Home, LineChart, ScanLine, Bot, User, Loader2, Bell } from "lucide-react";
+import { Home, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
-export const Route = createFileRoute("/_app")({
-  beforeLoad: async () => {
-    // Soft gate — full check inside component (auth hydrates client-side)
-    return {};
-  },
-  component: AppLayout,
-});
+export const Route = createFileRoute("/_app")({ component: AppLayout });
+
+const LAST_ROUTE_KEY = "sfx_last_route";
 
 function AppLayout() {
   const { user, profile, loading } = useAuth();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const nav = useNavigate();
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
-  }
-  if (!user) {
-    throw redirect({ to: "/login" });
-  }
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (path && path !== "/" && path !== "/account" && !path.startsWith("/login") && !path.startsWith("/register")) {
+      localStorage.setItem(LAST_ROUTE_KEY, path);
+    }
+  }, [path]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+  if (!user) throw redirect({ to: "/login" });
   if (profile?.status === "pending") return <PendingScreen />;
   if (profile?.status === "blocked") return <BlockedScreen />;
 
-  const tabs = [
-    { to: "/", icon: Home, label: "Home" },
-    { to: "/signals", icon: LineChart, label: "Signals" },
-    { to: "/scanner", icon: ScanLine, label: "Scanner" },
-    { to: "/ea", icon: Bot, label: "EA" },
-    { to: "/account", icon: User, label: "Account" },
-  ];
+  const goHome = () => {
+    const last = typeof window !== "undefined" ? localStorage.getItem(LAST_ROUTE_KEY) : null;
+    if (path === "/account" && last) { nav({ to: last as never }); }
+    else { nav({ to: "/" }); }
+  };
+
+  const isAccount = path === "/account";
+  const isHome = !isAccount;
 
   return (
-    <div className="min-h-screen pb-28">
-      <header className="sticky top-0 z-40 glass-strong px-5 py-3 flex items-center justify-between border-b border-[color:var(--color-border)]">
-        <div className="flex items-center gap-2">
-          <img src="/icons/sfx-logo.png" alt="" className="w-9 h-9 rounded-full glow-soft" />
-          <span className="font-bold text-glow">SFX</span>
-        </div>
-        <Link to="/inbox" className="relative w-10 h-10 rounded-full glass flex items-center justify-center">
-          <Bell size={18} />
-        </Link>
-      </header>
+    <div className="min-h-screen pb-32">
+      <main className="px-5 py-5"><Outlet /></main>
 
-      <main className="px-5 py-5">
-        <Outlet />
-      </main>
-
-      <nav className="fixed bottom-4 left-4 right-4 z-50 glass-strong rounded-full px-2 py-2 flex items-center justify-around glow-soft">
-        {tabs.map((t) => {
-          const active = path === t.to || (t.to !== "/" && path.startsWith(t.to));
-          const Icon = t.icon;
-          return (
-            <Link
-              key={t.to}
-              to={t.to}
-              className={cn(
-                "flex flex-col items-center justify-center px-3 py-2 rounded-full transition-all duration-300",
-                active ? "bg-primary/20 text-primary text-glow scale-105" : "text-muted-foreground",
-              )}
-            >
-              <Icon size={20} />
-              <span className="text-[10px] mt-0.5">{t.label}</span>
-            </Link>
-          );
-        })}
+      <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 glass-strong rounded-full px-3 py-3 flex items-center gap-3 glow">
+        <NavBtn active={isHome} onClick={goHome} icon={Home} />
+        <NavBtn active={isAccount} onClick={() => nav({ to: "/account" })} icon={User} />
       </nav>
     </div>
+  );
+}
+
+function NavBtn({ active, onClick, icon: Icon }: { active: boolean; onClick: () => void; icon: typeof Home }) {
+  return (
+    <button onClick={onClick} className={cn(
+      "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
+      active ? "bg-primary text-black glow scale-110" : "bg-white/5 text-muted-foreground hover:text-primary",
+    )}>
+      <Icon size={22} strokeWidth={2.2} />
+    </button>
   );
 }
 
@@ -80,7 +66,7 @@ function PendingScreen() {
         <Logo size={72} />
         <h2 className="mt-5 text-xl font-bold text-glow">Awaiting approval</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Hi {profile?.name ?? "trader"}, your account is pending admin approval. You'll get access as soon as you're approved.
+          Hi {profile?.name ?? "trader"}, your account is pending admin approval.
         </p>
         <button onClick={signOut} className="mt-6 rounded-full px-5 py-2 bg-white/5 border border-white/10 text-sm">Sign out</button>
       </div>
