@@ -5,13 +5,15 @@ import { GlowButton } from "@/components/GlowButton";
 import { analyseChart } from "@/lib/scanner.functions";
 import { useAuth } from "@/lib/auth-context";
 import { useRef, useState } from "react";
-import { Upload, Loader2, ScanLine, Lock } from "lucide-react";
+import { Upload, Loader2, ScanLine, Lock, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/scanner")({
   head: () => ({ meta: [{ title: "AI Scanner — SFX" }] }),
   component: ScannerPage,
 });
+
+type ScanOk = { ok: true; pair: string; timeframe: string; bias: "BUY" | "SELL"; notes: string; entry: number; tp: number; sl: number; digits: number };
 
 function ScannerPage() {
   const { profile } = useAuth();
@@ -21,7 +23,7 @@ function ScannerPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<ScanOk | null>(null);
   const [fileData, setFileData] = useState<{ base64: string; mime: string } | null>(null);
 
   const onPick = (f: File) => {
@@ -41,7 +43,7 @@ function ScannerPage() {
     try {
       const res = await analyse({ data: { imageBase64: fileData.base64, mimeType: fileData.mime, note: note || undefined } });
       if (!res.ok) { toast.error(res.error); return; }
-      setResult(res.analysis);
+      setResult(res);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Analysis failed");
     } finally { setLoading(false); }
@@ -62,7 +64,7 @@ function ScannerPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-glow">AI Chart Scanner</h1>
-        <p className="text-xs text-muted-foreground">Upload a chart screenshot — Entry, TP, SL in seconds.</p>
+        <p className="text-xs text-muted-foreground">Upload a chart — AI reads pair + timeframe, live price from TwelveData, Entry/TP/SL in seconds.</p>
       </div>
 
       <GlassCard>
@@ -83,7 +85,7 @@ function ScannerPage() {
 
         <textarea
           value={note} onChange={(e) => setNote(e.target.value)} maxLength={400}
-          placeholder="Optional context (pair, timeframe, etc.)"
+          placeholder="Optional context"
           className="w-full mt-3 glass rounded-xl px-3 py-2 text-sm bg-transparent border border-white/10 outline-none focus:border-primary/40"
           rows={2}
         />
@@ -94,8 +96,32 @@ function ScannerPage() {
 
       {result && (
         <GlassCard glow="blue" className="bounce-in">
-          <h3 className="font-bold text-glow mb-2">Analysis</h3>
-          <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground/90 font-mono">{result}</pre>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center ${result.bias === "BUY" ? "bg-primary/20" : "bg-destructive/20"}`}>
+                {result.bias === "BUY" ? <ArrowUpRight className="text-primary" /> : <ArrowDownRight className="text-destructive" />}
+              </div>
+              <div>
+                <p className="font-bold text-lg">{result.pair}</p>
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{result.timeframe} · {result.bias}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-muted-foreground">Live Entry</p>
+              <p className="font-mono text-base text-primary text-glow">{result.entry.toFixed(result.digits)}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-4 text-center">
+            <div className="glass rounded-xl py-2">
+              <p className="text-[10px] text-muted-foreground">Take Profit</p>
+              <p className="font-mono text-sm text-primary">{result.tp.toFixed(result.digits)}</p>
+            </div>
+            <div className="glass rounded-xl py-2">
+              <p className="text-[10px] text-muted-foreground">Stop Loss</p>
+              <p className="font-mono text-sm text-destructive">{result.sl.toFixed(result.digits)}</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3">{result.notes}</p>
         </GlassCard>
       )}
     </div>
