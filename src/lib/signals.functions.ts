@@ -3,15 +3,19 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-// 7 pairs mapped to TwelveData symbols.
-export const PAIRS = [
-  { pair: "USDJPY", symbol: "USD/JPY", pip: 0.01, tpPips: 30, slPips: 15 },
-  { pair: "EURUSD", symbol: "EUR/USD", pip: 0.0001, tpPips: 30, slPips: 15 },
-  { pair: "GBPUSD", symbol: "GBP/USD", pip: 0.0001, tpPips: 30, slPips: 15 },
-  { pair: "NZDUSD", symbol: "NZD/USD", pip: 0.0001, tpPips: 30, slPips: 15 },
-  { pair: "XAUUSD", symbol: "XAU/USD", pip: 1, tpPips: 5, slPips: 2.5 },
-  { pair: "BTCUSD", symbol: "BTC/USD", pip: 100, tpPips: 10, slPips: 5 },
-  { pair: "DJI", symbol: "DJI", pip: 1, tpPips: 50, slPips: 25 },
+const TD_SIGNALS_KEY = process.env.TWELVEDATA_SIGNALS_KEY || process.env.TWELVEDATA_API_KEY || "71193c29f14e4d2e8226939d6a26f263";
+
+type PairCfg = { pair: string; symbol: string; point: number; tpPoints: number; slPoints: number; digits: number };
+
+export const PAIRS: PairCfg[] = [
+  { pair: "EURUSD", symbol: "EUR/USD", point: 0.00001, tpPoints: 70, slPoints: 30, digits: 5 },
+  { pair: "GBPUSD", symbol: "GBP/USD", point: 0.00001, tpPoints: 70, slPoints: 30, digits: 5 },
+  { pair: "USDJPY", symbol: "USD/JPY", point: 0.001,   tpPoints: 70, slPoints: 30, digits: 3 },
+  { pair: "AUDUSD", symbol: "AUD/USD", point: 0.00001, tpPoints: 70, slPoints: 30, digits: 5 },
+  { pair: "NZDUSD", symbol: "NZD/USD", point: 0.00001, tpPoints: 70, slPoints: 30, digits: 5 },
+  { pair: "USDCAD", symbol: "USD/CAD", point: 0.00001, tpPoints: 70, slPoints: 30, digits: 5 },
+  { pair: "XAUUSD", symbol: "XAU/USD", point: 0.01,    tpPoints: 4300, slPoints: 2000, digits: 2 },
+  { pair: "BTCUSD", symbol: "BTC/USD", point: 0.01,    tpPoints: 200000, slPoints: 100000, digits: 2 },
 ];
 
 function ema(values: number[], period: number) {
@@ -25,27 +29,30 @@ function ema(values: number[], period: number) {
   return out;
 }
 
-async function fetchSeries(symbol: string, apiKey: string) {
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1h&outputsize=60&apikey=${apiKey}`;
+async function fetchSeries(symbol: string) {
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1h&outputsize=60&apikey=${TD_SIGNALS_KEY}`;
   const res = await fetch(url);
   const json = await res.json();
   if (json.status === "error") throw new Error(`TwelveData ${symbol}: ${json.message}`);
-  const values = (json.values as Array<{ close: string; datetime: string }>) || [];
+  const values = (json.values as Array<{ close: string }>) || [];
   return values.reverse().map((v) => parseFloat(v.close));
 }
 
-export const refreshSignals = createServerFn({ method: "POST" }).handler(async () => {
-  const apiKey = process.env.TWELVEDATA_API_KEY;
-  if (!apiKey) throw new Error("TWELVEDATA_API_KEY not configured");
+async function fetchLivePrice(symbol: string): Promise<number> {
+  const res = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}&apikey=${TD_SIGNALS_KEY}`);
+  const j = await res.json();
+  if (j.status === "error" || !j.price) throw new Error(j.message ?? "no price");
+  return parseFloat(j.price);
+}
 
+export const refreshSignals = createServerFn({ method: "POST" }).handler(async () => {
   const results: { pair: string; action: string; error?: string }[] = [];
   for (const p of PAIRS) {
     try {
-      const closes = await fetchSeries(p.symbol, apiKey);
+      const closes = await fetchSeries(p.symbol);
       if (closes.length < 25) { results.push({ pair: p.pair, action: "skip:no_data" }); continue; }
       const e9 = ema(closes, 9);
       const e21 = ema(closes, 21);
-      const last = closes.at(-1)!;
       const prev9 = e9.at(-2)!; const prev21 = e21.at(-2)!;
       const cur9 = e9.at(-1)!; const cur21 = e21.at(-1)!;
 
@@ -53,28 +60,31 @@ export const refreshSignals = createServerFn({ method: "POST" }).handler(async (
       let reason = "";
       if (prev9 <= prev21 && cur9 > cur21) { side = "BUY"; reason = "EMA9 crossed above EMA21 (H1)"; }
       else if (prev9 >= prev21 && cur9 < cur21) { side = "SELL"; reason = "EMA9 crossed below EMA21 (H1)"; }
-
       if (!side) { results.push({ pair: p.pair, action: "no_crossover" }); continue; }
 
-      // Skip if an active signal already exists for this pair.
       const { data: active } = await supabaseAdmin
         .from("signals").select("id").eq("pair", p.pair).eq("status", "active").limit(1);
       if (active && active.length) { results.push({ pair: p.pair, action: "active_exists" }); continue; }
 
-      const tpDist = p.pip * p.tpPips;
-      const slDist = p.pip * p.slPips;
-      const entry = last;
+      // Use the LIVE price as entry, not a historical close — accuracy fix
+      const entry = await fetchLivePrice(p.symbol);
+      const tpDist = p.point * p.tpPoints;
+      const slDist = p.point * p.slPoints;
       const tp = side === "BUY" ? entry + tpDist : entry - tpDist;
       const sl = side === "BUY" ? entry - slDist : entry + slDist;
 
       const { error } = await supabaseAdmin.from("signals").insert({
-        pair: p.pair, side, entry, take_profit: tp, stop_loss: sl, reason, status: "active", tp_percent: 0,
+        pair: p.pair, side,
+        entry: +entry.toFixed(p.digits),
+        take_profit: +tp.toFixed(p.digits),
+        stop_loss: +sl.toFixed(p.digits),
+        reason, status: "active", tp_percent: 0,
       });
       if (error) { results.push({ pair: p.pair, action: "error", error: error.message }); continue; }
 
       await supabaseAdmin.from("notifications").insert({
-        title: `New ${side.toUpperCase()} signal — ${p.pair}`,
-        body: `Entry ${entry.toFixed(p.pip < 1 ? 5 : 2)} • TP ${tp.toFixed(p.pip < 1 ? 5 : 2)} • SL ${sl.toFixed(p.pip < 1 ? 5 : 2)}`,
+        title: `New ${side} signal — ${p.pair}`,
+        body: `Entry ${entry.toFixed(p.digits)} • TP ${tp.toFixed(p.digits)} • SL ${sl.toFixed(p.digits)}`,
         is_broadcast: true,
       });
       results.push({ pair: p.pair, action: `created:${side}` });
