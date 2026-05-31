@@ -30,7 +30,12 @@ export const updateUser = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
-    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const patch: {
+      updated_at: string;
+      status?: "pending" | "approved" | "blocked" | "declined";
+      plan?: "none" | "lite" | "pro" | "premium";
+      education_enrolled?: boolean;
+    } = { updated_at: new Date().toISOString() };
     if (data.status) patch.status = data.status;
     if (data.plan) patch.plan = data.plan;
     if (typeof data.education_enrolled === "boolean") patch.education_enrolled = data.education_enrolled;
