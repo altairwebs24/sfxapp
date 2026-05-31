@@ -21,6 +21,7 @@ export type Database = {
           auth_wallpaper_url: string | null
           ea_logo_url: string | null
           ea_name: string
+          feature_icons: Json
           id: number
           theme_accent: string
           updated_at: string
@@ -31,6 +32,7 @@ export type Database = {
           auth_wallpaper_url?: string | null
           ea_logo_url?: string | null
           ea_name?: string
+          feature_icons?: Json
           id?: number
           theme_accent?: string
           updated_at?: string
@@ -41,11 +43,109 @@ export type Database = {
           auth_wallpaper_url?: string | null
           ea_logo_url?: string | null
           ea_name?: string
+          feature_icons?: Json
           id?: number
           theme_accent?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      education_lessons: {
+        Row: {
+          body_md: string
+          created_at: string
+          id: string
+          order_index: number
+          slug: string
+          title: string
+        }
+        Insert: {
+          body_md: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          slug: string
+          title: string
+        }
+        Update: {
+          body_md?: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          slug?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      education_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          lesson_id: string
+          quiz_score: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id: string
+          quiz_score?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          quiz_score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "education_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_quizzes: {
+        Row: {
+          correct_index: number
+          id: string
+          lesson_id: string
+          options: Json
+          order_index: number
+          question: string
+        }
+        Insert: {
+          correct_index: number
+          id?: string
+          lesson_id: string
+          options: Json
+          order_index?: number
+          question: string
+        }
+        Update: {
+          correct_index?: number
+          id?: string
+          lesson_id?: string
+          options?: Json
+          order_index?: number
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_quizzes_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "education_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -115,6 +215,7 @@ export type Database = {
           avatar_url: string | null
           country_code: string | null
           created_at: string
+          education_enrolled: boolean
           email: string | null
           id: string
           mt4_broker: string | null
@@ -137,6 +238,7 @@ export type Database = {
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
+          education_enrolled?: boolean
           email?: string | null
           id: string
           mt4_broker?: string | null
@@ -159,6 +261,7 @@ export type Database = {
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
+          education_enrolled?: boolean
           email?: string | null
           id?: string
           mt4_broker?: string | null
@@ -253,7 +356,7 @@ export type Database = {
       }
     }
     Enums: {
-      account_status: "pending" | "approved" | "blocked"
+      account_status: "pending" | "approved" | "blocked" | "declined"
       app_role: "admin" | "user"
       plan_tier: "none" | "lite" | "pro" | "premium"
       signal_side: "BUY" | "SELL"
@@ -385,7 +488,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      account_status: ["pending", "approved", "blocked"],
+      account_status: ["pending", "approved", "blocked", "declined"],
       app_role: ["admin", "user"],
       plan_tier: ["none", "lite", "pro", "premium"],
       signal_side: ["BUY", "SELL"],
