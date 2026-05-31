@@ -1,5 +1,5 @@
 // WhatsApp checkout helpers — owner number for manual payment confirmations.
-export const WHATSAPP_NUMBER = "27724655784"; // 0724655784 in E.164 (no +)
+export const WHATSAPP_NUMBER = "27724655784";
 
 export function buildWhatsAppCheckoutUrl(opts: {
   plan: string;
@@ -17,14 +17,36 @@ export function buildWhatsAppCheckoutUrl(opts: {
     opts.email ? `• Email: ${opts.email}` : null,
     opts.requestId ? `• Ref: ${opts.requestId}` : null,
     ``,
-    `Please confirm the payment details and activate my account once you receive the EFT.`,
+    `Please confirm payment and activate my account.`,
   ].filter(Boolean).join("\n");
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines)}`;
 }
 
-export const PLANS = [
-  { id: "lite", name: "Lite", price: 300, features: ["Live Signals", "Inbox alerts", "Calendar"] },
-  { id: "pro", name: "Pro", price: 600, features: ["Everything in Lite", "AI Chart Scanner", "Priority signals"] },
-  { id: "premium", name: "Premium", price: 1500, features: ["Everything in Pro", "EA Dashboard", "Automated trading"] },
-] as const;
-export type PlanId = (typeof PLANS)[number]["id"];
+export type PlanDef = {
+  id: "lite" | "pro" | "premium" | "education";
+  name: string;
+  price: number;
+  features: string[];
+  locked?: boolean;
+  badge?: string;
+};
+
+export const PLANS: PlanDef[] = [
+  { id: "lite", name: "Basic", price: 250, features: ["Live trading signals", "Inbox alerts", "Economic calendar"] },
+  { id: "pro", name: "Pro", price: 350, features: ["Everything in Basic", "AI Chart Scanner", "Priority signals"] },
+  { id: "premium", name: "Premium", price: 1300, features: ["Everything in Pro", "Education platform", "EA automation"], locked: true, badge: "Coming Soon" },
+];
+
+export const EDUCATION_FEE = 200;
+
+export type PlanId = PlanDef["id"];
+
+// Capability gating — keep in sync with plans above
+export function canAccess(feature: "signals" | "scanner" | "education" | "ea", plan: string | null | undefined, educationEnrolled?: boolean) {
+  const p = plan ?? "none";
+  if (feature === "ea") return false; // Always locked — Coming Soon
+  if (feature === "signals") return ["lite", "pro", "premium"].includes(p);
+  if (feature === "scanner") return ["pro", "premium"].includes(p);
+  if (feature === "education") return p === "premium" || !!educationEnrolled;
+  return false;
+}

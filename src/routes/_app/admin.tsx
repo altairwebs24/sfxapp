@@ -43,7 +43,7 @@ function AdminDashboard() {
     try { await doUpdate({ data: { userId: id, plan, status: "approved" } }); qc.invalidateQueries({ queryKey: ["admin-users"] }); toast.success(`Plan → ${plan}`); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
   };
-  const setStatus = async (id: string, status: "approved" | "pending" | "blocked") => {
+  const setStatus = async (id: string, status: "approved" | "pending" | "blocked" | "declined") => {
     try { await doUpdate({ data: { userId: id, status } }); qc.invalidateQueries({ queryKey: ["admin-users"] }); toast.success(`Status → ${status}`); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
   };
@@ -119,11 +119,13 @@ function AdminDashboard() {
               <p className="text-[10px] text-muted-foreground">{u.status} · {u.plan}</p>
               <div className="flex flex-wrap gap-1 mt-2">
                 <PillBtn onClick={() => setStatus(u.id, "approved")}>Approve</PillBtn>
+                <PillBtn onClick={() => setStatus(u.id, "declined")}>Decline</PillBtn>
                 <PillBtn onClick={() => setStatus(u.id, "blocked")}>Block</PillBtn>
-                <PillBtn onClick={() => setPlan(u.id, "lite")}>Lite</PillBtn>
+                <PillBtn onClick={() => setStatus(u.id, "pending")}>Reset status</PillBtn>
+                <PillBtn onClick={() => setPlan(u.id, "lite")}>Basic</PillBtn>
                 <PillBtn onClick={() => setPlan(u.id, "pro")}>Pro</PillBtn>
                 <PillBtn onClick={() => setPlan(u.id, "premium")}>Premium</PillBtn>
-                <PillBtn onClick={() => setPlan(u.id, "none")}>Reset</PillBtn>
+                <PillBtn onClick={() => setPlan(u.id, "none")}>Revoke plan</PillBtn>
               </div>
             </div>
           ))}

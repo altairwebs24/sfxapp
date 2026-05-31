@@ -17,6 +17,7 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSignalsRouteImport } from './routes/_app/signals'
 import { Route as AppScannerRouteImport } from './routes/_app/scanner'
 import { Route as AppInboxRouteImport } from './routes/_app/inbox'
+import { Route as AppEducationRouteImport } from './routes/_app/education'
 import { Route as AppEaRouteImport } from './routes/_app/ea'
 import { Route as AppAdminRouteImport } from './routes/_app/admin'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
@@ -61,6 +62,11 @@ const AppInboxRoute = AppInboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEducationRoute = AppEducationRouteImport.update({
+  id: '/education',
+  path: '/education',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppEaRoute = AppEaRouteImport.update({
   id: '/ea',
   path: '/ea',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AppAccountRoute
   '/admin': typeof AppAdminRoute
   '/ea': typeof AppEaRoute
+  '/education': typeof AppEducationRoute
   '/inbox': typeof AppInboxRoute
   '/scanner': typeof AppScannerRoute
   '/signals': typeof AppSignalsRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/account': typeof AppAccountRoute
   '/admin': typeof AppAdminRoute
   '/ea': typeof AppEaRoute
+  '/education': typeof AppEducationRoute
   '/inbox': typeof AppInboxRoute
   '/scanner': typeof AppScannerRoute
   '/signals': typeof AppSignalsRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/_app/account': typeof AppAccountRoute
   '/_app/admin': typeof AppAdminRoute
   '/_app/ea': typeof AppEaRoute
+  '/_app/education': typeof AppEducationRoute
   '/_app/inbox': typeof AppInboxRoute
   '/_app/scanner': typeof AppScannerRoute
   '/_app/signals': typeof AppSignalsRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/ea'
+    | '/education'
     | '/inbox'
     | '/scanner'
     | '/signals'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/ea'
+    | '/education'
     | '/inbox'
     | '/scanner'
     | '/signals'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/_app/account'
     | '/_app/admin'
     | '/_app/ea'
+    | '/_app/education'
     | '/_app/inbox'
     | '/_app/scanner'
     | '/_app/signals'
@@ -232,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInboxRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/education': {
+      id: '/_app/education'
+      path: '/education'
+      fullPath: '/education'
+      preLoaderRoute: typeof AppEducationRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/ea': {
       id: '/_app/ea'
       path: '/ea'
@@ -267,6 +286,7 @@ interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppAdminRoute: typeof AppAdminRoute
   AppEaRoute: typeof AppEaRoute
+  AppEducationRoute: typeof AppEducationRoute
   AppInboxRoute: typeof AppInboxRoute
   AppScannerRoute: typeof AppScannerRoute
   AppSignalsRoute: typeof AppSignalsRoute
@@ -277,6 +297,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppAdminRoute: AppAdminRoute,
   AppEaRoute: AppEaRoute,
+  AppEducationRoute: AppEducationRoute,
   AppInboxRoute: AppInboxRoute,
   AppScannerRoute: AppScannerRoute,
   AppSignalsRoute: AppSignalsRoute,
@@ -295,13 +316,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
