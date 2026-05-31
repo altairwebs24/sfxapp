@@ -11,8 +11,9 @@ export type Profile = {
   country_code: string | null;
   email: string | null;
   avatar_url: string | null;
-  status: "pending" | "approved" | "blocked";
+  status: "pending" | "approved" | "blocked" | "declined";
   plan: "none" | "lite" | "pro" | "premium";
+  education_enrolled?: boolean | null;
 };
 
 type AuthCtx = {

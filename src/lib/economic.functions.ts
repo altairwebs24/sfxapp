@@ -1,62 +1,72 @@
 import { createServerFn } from "@tanstack/react-start";
 
-const SYSTEM = `You are a precise forex economic calendar assistant. Return ONLY the next upcoming HIGH-IMPACT economic events that move forex, gold, indices and crypto markets.
-Allowed event names (use these exact short names):
-NFP (Non-Farm Payrolls), CPI, Core CPI, PPI, FOMC Rate Decision, FOMC Minutes, GDP, ISM Manufacturing PMI, ISM Services PMI, Retail Sales, Unemployment Rate, Core PCE, JOLTS, ADP Employment, ECB Rate Decision, BoE Rate Decision, BoJ Rate Decision, Powell Speech.
-Use the official published US/Global schedules from your knowledge — accurate dates and release times in UTC.
-Never include low-impact events.`;
+export type EconEvent = {
+  name: string;
+  iso_utc: string;
+  affects: string;
+  impact: "high" | "medium";
+};
 
-export type EconEvent = { name: string; iso_utc: string; affects: string; importance: "high" | "medium" };
+// --- Deterministic helpers ---
+function nthWeekdayOfMonth(year: number, month: number, weekday: number, n: number) {
+  // month is 0-indexed; weekday: 0=Sun..6=Sat
+  const first = new Date(Date.UTC(year, month, 1));
+  const firstWd = first.getUTCDay();
+  const offset = (weekday - firstWd + 7) % 7;
+  const day = 1 + offset + (n - 1) * 7;
+  return new Date(Date.UTC(year, month, day));
+}
+
+function at(date: Date, h: number, m: number) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), h, m, 0)).toISOString();
+}
+
+// Known scheduled central-bank decisions (UTC times approximate to announcement)
+const FOMC_2026 = ["2026-01-28T19:00:00Z","2026-03-18T18:00:00Z","2026-04-29T18:00:00Z","2026-06-17T18:00:00Z","2026-07-29T18:00:00Z","2026-09-16T18:00:00Z","2026-11-04T19:00:00Z","2026-12-16T19:00:00Z"];
+const ECB_2026  = ["2026-01-22T13:15:00Z","2026-03-12T13:15:00Z","2026-04-16T12:15:00Z","2026-06-04T12:15:00Z","2026-07-23T12:15:00Z","2026-09-10T12:15:00Z","2026-10-29T13:15:00Z","2026-12-17T13:15:00Z"];
+const BOE_2026  = ["2026-02-05T12:00:00Z","2026-03-19T12:00:00Z","2026-05-07T11:00:00Z","2026-06-18T11:00:00Z","2026-08-06T11:00:00Z","2026-09-17T11:00:00Z","2026-11-05T12:00:00Z","2026-12-17T12:00:00Z"];
 
 export const getEconomicEvents = createServerFn({ method: "GET" }).handler(async () => {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) return { events: [] as EconEvent[] };
-  const today = new Date().toISOString();
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: `Today (UTC) is ${today}. Return the next 8 high-impact upcoming events sorted by time ascending. Skip any event already in the past.` },
-      ],
-      tools: [{
-        type: "function",
-        function: {
-          name: "return_events",
-          description: "Return upcoming high-impact economic events.",
-          parameters: {
-            type: "object",
-            properties: {
-              events: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    iso_utc: { type: "string", description: "ISO-8601 UTC, e.g. 2026-06-06T12:30:00Z" },
-                    affects: { type: "string", description: "Comma-separated pairs/indices" },
-                    importance: { type: "string", enum: ["high", "medium"] },
-                  },
-                  required: ["name", "iso_utc", "affects", "importance"],
-                },
-              },
-            },
-            required: ["events"],
-          },
-        },
-      }],
-      tool_choice: { type: "function", function: { name: "return_events" } },
-    }),
-  });
-  if (!res.ok) return { events: [] as EconEvent[] };
-  const json = await res.json();
-  const call = json?.choices?.[0]?.message?.tool_calls?.[0];
-  if (!call) return { events: [] as EconEvent[] };
-  try {
-    const args = JSON.parse(call.function.arguments);
-    const events: EconEvent[] = (args.events ?? []).filter((e: EconEvent) => new Date(e.iso_utc).getTime() > Date.now());
-    return { events };
-  } catch { return { events: [] as EconEvent[] }; }
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 60 * 86400000); // 60 days
+  const events: EconEvent[] = [];
+
+  // Iterate next 3 months for recurring events
+  for (let i = 0; i < 3; i++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + i, 1));
+    const y = d.getUTCFullYear(); const m = d.getUTCMonth();
+
+    // NFP — first Friday, 12:30 UTC (US Nonfarm Payrolls release time)
+    const nfp = nthWeekdayOfMonth(y, m, 5, 1);
+    events.push({ name: "US Nonfarm Payrolls (NFP)", iso_utc: at(nfp, 12, 30), affects: "USD · Gold · Indices", impact: "high" });
+
+    // US CPI — second Wednesday, 12:30 UTC (approx; actual day varies)
+    const cpi = nthWeekdayOfMonth(y, m, 3, 2);
+    events.push({ name: "US CPI (Inflation)", iso_utc: at(cpi, 12, 30), affects: "USD · Gold · Indices", impact: "high" });
+
+    // US PPI — usually day after CPI
+    const ppi = new Date(cpi.getTime() + 86400000);
+    events.push({ name: "US PPI", iso_utc: at(ppi, 12, 30), affects: "USD", impact: "medium" });
+
+    // US Unemployment Claims — every Thursday (add the first Thursday of month + 3 more)
+    for (let w = 1; w <= 4; w++) {
+      const thu = nthWeekdayOfMonth(y, m, 4, w);
+      if (thu.getUTCMonth() === m) {
+        events.push({ name: "US Unemployment Claims", iso_utc: at(thu, 12, 30), affects: "USD", impact: "medium" });
+      }
+    }
+  }
+
+  FOMC_2026.forEach((iso) => events.push({ name: "FOMC Rate Decision", iso_utc: iso, affects: "USD · Gold · BTC · Indices", impact: "high" }));
+  ECB_2026.forEach((iso)  => events.push({ name: "ECB Rate Decision",  iso_utc: iso, affects: "EUR · DXY", impact: "high" }));
+  BOE_2026.forEach((iso)  => events.push({ name: "BoE Rate Decision",  iso_utc: iso, affects: "GBP", impact: "high" }));
+
+  const filtered = events
+    .filter((e) => {
+      const t = new Date(e.iso_utc).getTime();
+      return t > now.getTime() && t < horizon.getTime();
+    })
+    .sort((a, b) => new Date(a.iso_utc).getTime() - new Date(b.iso_utc).getTime());
+
+  return { events: filtered };
 });

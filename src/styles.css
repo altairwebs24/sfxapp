@@ -30,49 +30,41 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-glow: var(--glow);
-  --color-glow-strong: var(--glow-strong);
 }
 
 :root {
   --radius: 1.25rem;
-  /* Black canvas + light-blue glow palette */
-  --background: oklch(0.02 0 0);
-  --foreground: oklch(0.98 0.01 230);
-  --card: oklch(0.08 0.02 240 / 0.55);
-  --card-foreground: oklch(0.98 0.01 230);
-  --popover: oklch(0.1 0.02 240 / 0.85);
-  --popover-foreground: oklch(0.98 0.01 230);
-  --primary: oklch(0.85 0.13 230);
-  --primary-foreground: oklch(0.1 0.02 240);
-  --secondary: oklch(0.15 0.02 240 / 0.7);
-  --secondary-foreground: oklch(0.98 0.01 230);
-  --muted: oklch(0.15 0.02 240 / 0.5);
-  --muted-foreground: oklch(0.7 0.03 230);
-  --accent: oklch(0.85 0.13 230);
-  --accent-foreground: oklch(0.1 0.02 240);
-  --destructive: oklch(0.68 0.22 25);
-  --destructive-foreground: oklch(0.98 0.01 230);
-  --border: oklch(0.85 0.13 230 / 0.18);
-  --input: oklch(0.85 0.13 230 / 0.12);
-  --ring: oklch(0.85 0.13 230 / 0.5);
+  /* Pure B&W — black canvas, white ink, no neon */
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.1 0 0 / 0.6);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0.08 0 0);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.15 0 0);
+  --muted-foreground: oklch(0.72 0 0);
+  --accent: oklch(1 0 0);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.65 0.18 25);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0 / 0.12);
+  --input: oklch(1 0 0 / 0.08);
+  --ring: oklch(1 0 0 / 0.4);
 
-  --glow: oklch(0.85 0.13 230);
-  --glow-strong: oklch(0.9 0.18 230);
-
-  --gradient-glow: radial-gradient(circle at 50% 0%, oklch(0.85 0.13 230 / 0.25), transparent 60%);
-  --gradient-card: linear-gradient(135deg, oklch(0.15 0.03 240 / 0.6), oklch(0.06 0.02 240 / 0.4));
-  --shadow-glow: 0 0 40px oklch(0.85 0.13 230 / 0.35), 0 0 80px oklch(0.85 0.13 230 / 0.15);
-  --shadow-glow-soft: 0 0 24px oklch(0.85 0.13 230 / 0.2);
-  --shadow-red-glow: 0 0 30px oklch(0.68 0.22 25 / 0.45), 0 0 60px oklch(0.68 0.22 25 / 0.2);
+  --gradient-card: linear-gradient(135deg, oklch(0.14 0 0 / 0.7), oklch(0.06 0 0 / 0.5));
+  --shadow-soft: 0 4px 24px oklch(0 0 0 / 0.5), 0 0 0 1px oklch(1 0 0 / 0.06);
+  --shadow-strong: 0 8px 40px oklch(0 0 0 / 0.7), 0 0 0 1px oklch(1 0 0 / 0.1);
 
   --transition-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .dark {
-  /* App is always dark — duplicate for any .dark consumers */
-  --background: oklch(0.02 0 0);
-  --foreground: oklch(0.98 0.01 230);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
 }
 
 @layer base {
@@ -81,13 +73,11 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    background-image: var(--gradient-glow);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: none;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
   }
-  /* Hide scrollbars everywhere */
   ::-webkit-scrollbar { display: none; }
   * { scrollbar-width: none; }
 }
@@ -95,35 +85,36 @@
 @layer utilities {
   .glass {
     background: var(--gradient-card);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-2xl);
   }
   .glass-strong {
-    background: oklch(0.1 0.02 240 / 0.65);
-    backdrop-filter: blur(32px) saturate(180%);
-    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    background: oklch(0.06 0 0 / 0.85);
+    backdrop-filter: blur(28px) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
     border: 1px solid var(--color-border);
   }
-  .glow { box-shadow: var(--shadow-glow); }
-  .glow-soft { box-shadow: var(--shadow-glow-soft); }
-  .glow-red { box-shadow: var(--shadow-red-glow); }
-  .text-glow { text-shadow: 0 0 20px oklch(0.85 0.13 230 / 0.6); }
-  .bounce-in { animation: bounceIn 0.6s var(--transition-bounce); }
-  .fade-up { animation: fadeUp 0.5s ease-out; }
-  .pulse-glow { animation: pulseGlow 2.5s ease-in-out infinite; }
+  /* Glows kept as no-op aliases so existing class usage still compiles */
+  .glow { box-shadow: var(--shadow-strong); }
+  .glow-soft { box-shadow: var(--shadow-soft); }
+  .glow-red { box-shadow: 0 0 30px oklch(0.65 0.18 25 / 0.3); }
+  .text-glow { text-shadow: none; }
+  .bounce-in { animation: bounceIn 0.5s var(--transition-bounce); }
+  .fade-up { animation: fadeUp 0.4s ease-out; }
+  .pulse-glow { animation: pulseSubtle 2.5s ease-in-out infinite; }
 }
 
 @keyframes bounceIn {
-  0% { opacity: 0; transform: scale(0.85) translateY(8px); }
+  0% { opacity: 0; transform: scale(0.92) translateY(6px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 @keyframes fadeUp {
-  0% { opacity: 0; transform: translateY(12px); }
+  0% { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 20px oklch(0.85 0.13 230 / 0.3); }
-  50% { box-shadow: 0 0 40px oklch(0.85 0.13 230 / 0.55), 0 0 80px oklch(0.85 0.13 230 / 0.2); }
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }

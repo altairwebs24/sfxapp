@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
-import { Home, User, Loader2 } from "lucide-react";
+import { Home, User, LineChart, Bot, ScanLine, GraduationCap, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 
@@ -16,7 +16,7 @@ function AppLayout() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (path && path !== "/" && path !== "/account" && !path.startsWith("/login") && !path.startsWith("/register")) {
+    if (path && path !== "/" && !path.startsWith("/login") && !path.startsWith("/register")) {
       localStorage.setItem(LAST_ROUTE_KEY, path);
     }
   }, [path]);
@@ -28,36 +28,43 @@ function AppLayout() {
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
   if (profile?.status === "pending") return <PendingScreen />;
   if (profile?.status === "blocked") return <BlockedScreen />;
+  if (profile?.status === "declined") return <DeclinedScreen />;
 
-  const goHome = () => {
-    const last = typeof window !== "undefined" ? localStorage.getItem(LAST_ROUTE_KEY) : null;
-    if (path === "/account" && last) { nav({ to: last as never }); }
-    else { nav({ to: "/" }); }
-  };
+  const isHome = path === "/";
 
-  const isAccount = path === "/account";
-  const isHome = !isAccount;
+  const items = [
+    { to: "/", icon: Home, label: "Home" },
+    { to: "/signals", icon: LineChart, label: "Signals" },
+    { to: "/scanner", icon: ScanLine, label: "Scanner" },
+    { to: "/ea", icon: Bot, label: "EA" },
+    { to: "/education", icon: GraduationCap, label: "Learn" },
+    { to: "/account", icon: User, label: "Account" },
+  ];
 
   return (
-    <div className="min-h-screen pb-32">
+    <div className={cn("min-h-screen", isHome ? "pb-8" : "pb-28")}>
       <main className="px-5 py-5"><Outlet /></main>
 
-      <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 glass-strong rounded-full px-3 py-3 flex items-center gap-3 glow">
-        <NavBtn active={isHome} onClick={goHome} icon={Home} />
-        <NavBtn active={isAccount} onClick={() => nav({ to: "/account" })} icon={User} />
-      </nav>
+      {!isHome && (
+        <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-black border border-white/15 rounded-full px-2 py-2 flex items-center gap-1 shadow-2xl">
+          {items.map((it) => {
+            const active = path === it.to;
+            const Icon = it.icon;
+            return (
+              <button key={it.to}
+                onClick={() => nav({ to: it.to as never })}
+                className={cn(
+                  "flex flex-col items-center justify-center rounded-full transition-all px-3 py-2 min-w-[56px]",
+                  active ? "bg-white text-black" : "text-white/70 hover:text-white",
+                )}>
+                <Icon size={18} strokeWidth={2.2} />
+                <span className="text-[9px] font-semibold mt-0.5">{it.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </div>
-  );
-}
-
-function NavBtn({ active, onClick, icon: Icon }: { active: boolean; onClick: () => void; icon: typeof Home }) {
-  return (
-    <button onClick={onClick} className={cn(
-      "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
-      active ? "bg-primary text-black glow scale-110" : "bg-white/5 text-muted-foreground hover:text-primary",
-    )}>
-      <Icon size={22} strokeWidth={2.2} />
-    </button>
   );
 }
 
@@ -67,7 +74,7 @@ function PendingScreen() {
     <div className="min-h-screen flex items-center justify-center px-6">
       <div className="glass p-8 max-w-sm text-center bounce-in">
         <Logo size={72} />
-        <h2 className="mt-5 text-xl font-bold text-glow">Awaiting approval</h2>
+        <h2 className="mt-5 text-xl font-bold">Awaiting approval</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Hi {profile?.name ?? "trader"}, your account is pending admin approval.
         </p>
@@ -83,6 +90,18 @@ function BlockedScreen() {
       <div className="glass p-8 max-w-sm text-center glow-red">
         <h2 className="text-xl font-bold text-destructive">Account blocked</h2>
         <p className="mt-2 text-sm text-muted-foreground">Contact support to reinstate access.</p>
+        <button onClick={signOut} className="mt-6 rounded-full px-5 py-2 bg-white/5 border border-white/10 text-sm">Sign out</button>
+      </div>
+    </div>
+  );
+}
+function DeclinedScreen() {
+  const { signOut } = useAuth();
+  return (
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="glass p-8 max-w-sm text-center">
+        <h2 className="text-xl font-bold text-destructive">Account declined</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Your application wasn't approved. Contact support for details.</p>
         <button onClick={signOut} className="mt-6 rounded-full px-5 py-2 bg-white/5 border border-white/10 text-sm">Sign out</button>
       </div>
     </div>

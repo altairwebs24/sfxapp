@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const createPaymentRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({
-    plan: z.enum(["lite", "pro", "premium"]),
+    plan: z.enum(["lite", "pro", "premium", "education"]),
     amountZar: z.number().min(1).max(100000),
   }).parse(d))
   .handler(async ({ data, context }) => {
