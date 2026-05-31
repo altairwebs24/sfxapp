@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { Home, User, Loader2 } from "lucide-react";
@@ -21,8 +21,11 @@ function AppLayout() {
     }
   }, [path]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
-  if (!user) throw redirect({ to: "/login" });
+  useEffect(() => {
+    if (!loading && !user) nav({ to: "/login" });
+  }, [loading, user, nav]);
+
+  if (loading || !user) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
   if (profile?.status === "pending") return <PendingScreen />;
   if (profile?.status === "blocked") return <BlockedScreen />;
 
