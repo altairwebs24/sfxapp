@@ -96,22 +96,37 @@ function Home() {
         ) : (
           <div className="absolute inset-y-0 right-0 w-3/5 bg-gradient-to-br from-white/15 to-transparent" />
         )}
-        <div className="absolute top-0 right-0 p-3 flex gap-2 z-10">
+        <div className="absolute top-0 right-0 p-3 flex gap-2 z-20">
           {isAdmin && (
-            <Link to="/admin" className="w-9 h-9 rounded-full glass-strong flex items-center justify-center" aria-label="Admin">
-              <ShieldCheck size={15} />
-            </Link>
+            <button
+              type="button"
+              onClick={() => nav({ to: "/admin" })}
+              className="w-9 h-9 rounded-full bg-black/80 border border-white/20 flex items-center justify-center active:scale-95 transition-transform"
+              aria-label="Admin panel"
+            >
+              <ShieldCheck size={15} className="text-white" />
+            </button>
           )}
-          <Link to="/inbox" className="relative w-9 h-9 rounded-full glass-strong flex items-center justify-center" aria-label="Inbox">
-            <Inbox size={15} />
+          <button
+            type="button"
+            onClick={() => nav({ to: "/inbox" })}
+            className="relative w-9 h-9 rounded-full bg-black/80 border border-white/20 flex items-center justify-center active:scale-95 transition-transform"
+            aria-label="Notifications"
+          >
+            <Inbox size={15} className="text-white" />
             {unread > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-white text-black text-[10px] font-bold flex items-center justify-center px-1">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}
-          </Link>
-          <button onClick={signOut} className="w-9 h-9 rounded-full glass-strong flex items-center justify-center" aria-label="Sign out">
-            <LogOut size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="w-9 h-9 rounded-full bg-black/80 border border-white/20 flex items-center justify-center active:scale-95 transition-transform"
+            aria-label="Sign out"
+          >
+            <LogOut size={15} className="text-white" />
           </button>
         </div>
         <div className="relative z-10 p-6 pt-7 flex flex-col justify-between h-full" style={{ minHeight: 220 }}>
