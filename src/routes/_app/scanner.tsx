@@ -90,10 +90,57 @@ function ScannerPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-glow">AI Chart Scanner</h1>
-        <p className="text-xs text-muted-foreground">Upload a chart — AI reads pair + timeframe, live price from TwelveData, Entry/TP/SL in seconds.</p>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-glow">AI Chart Scanner</h1>
+          <p className="text-xs text-muted-foreground">Upload a chart — AI reads pair + timeframe, live price from TwelveData, Entry/TP/SL in seconds.</p>
+        </div>
+        <button
+          onClick={() => setShowHistory((v) => !v)}
+          className="shrink-0 glass rounded-full px-3 py-2 text-xs flex items-center gap-1 border border-white/10"
+          aria-label="Toggle history"
+        >
+          <History size={14} /> History {history.length > 0 && <span className="text-primary">({history.length})</span>}
+        </button>
       </div>
+
+      {showHistory && (
+        <GlassCard className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">Past scans</p>
+            {history.length > 0 && (
+              <button onClick={clearHistory} className="text-[11px] text-destructive flex items-center gap-1">
+                <Trash2 size={12} /> Clear
+              </button>
+            )}
+          </div>
+          {history.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No past scans yet. Analyse a chart to start your history.</p>
+          ) : (
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {history.map((h) => (
+                <div key={h.id} className="glass rounded-xl p-3 flex items-center gap-3 border border-white/5">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${h.bias === "BUY" ? "bg-primary/20" : "bg-destructive/20"}`}>
+                    {h.bias === "BUY" ? <ArrowUpRight size={16} className="text-primary" /> : <ArrowDownRight size={16} className="text-destructive" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-sm">{h.pair}</p>
+                      <p className="text-[10px] text-muted-foreground">{new Date(h.at).toLocaleString()}</p>
+                    </div>
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{h.timeframe} · {h.bias}</p>
+                    <div className="grid grid-cols-3 gap-2 mt-1 font-mono text-[11px]">
+                      <span>E <span className="text-primary">{h.entry.toFixed(h.digits)}</span></span>
+                      <span>TP <span className="text-primary">{h.tp.toFixed(h.digits)}</span></span>
+                      <span>SL <span className="text-destructive">{h.sl.toFixed(h.digits)}</span></span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </GlassCard>
+      )}
 
       <GlassCard>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && onPick(e.target.files[0])} />
