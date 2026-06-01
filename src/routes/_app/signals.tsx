@@ -194,6 +194,42 @@ function SignalsPage() {
 }
 
 type Sig = { id: string; pair: string; side: string; entry: number; take_profit: number; stop_loss: number; status: string; tp_percent: number; reason: string | null; created_at: string };
+type GeneratedSignal = { pair: string; side: "BUY" | "SELL"; entry: number; take_profit: number; stop_loss: number; digits: number; strategy: string; reason: string; timeframe: string; generated_at: string };
+type GeneratedResult = { ok: false; pair: string; message: string } | { ok: true; signal: GeneratedSignal };
+
+function GeneratedSignalCard({ signal }: { signal: GeneratedSignal }) {
+  const buy = signal.side === "BUY";
+  return (
+    <GlassCard>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-full bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+            {buy ? <ArrowUpRight className="text-white" size={18} /> : <ArrowDownRight className="text-white" size={18} />}
+          </div>
+          <div className="min-w-0">
+            <p className="font-black truncate">{signal.strategy}</p>
+            <p className="text-[10px] uppercase tracking-widest text-white/50">{signal.timeframe} · {signal.side}</p>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-[10px] text-white/50">Entry</p>
+          <p className="font-mono text-sm">{signal.entry.toFixed(signal.digits)}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 mt-4 text-center">
+        <div className="bg-white/5 rounded-xl py-2">
+          <p className="text-[10px] text-white/50">TP</p>
+          <p className="font-mono text-xs">{signal.take_profit.toFixed(signal.digits)}</p>
+        </div>
+        <div className="bg-white/5 rounded-xl py-2">
+          <p className="text-[10px] text-white/50">SL</p>
+          <p className="font-mono text-xs">{signal.stop_loss.toFixed(signal.digits)}</p>
+        </div>
+      </div>
+      <p className="text-[11px] text-white/50 mt-3">{signal.reason}</p>
+    </GlassCard>
+  );
+}
 
 function SignalRow({ s, dimmed }: { s: Sig; dimmed?: boolean }) {
   const buy = s.side === "BUY";
