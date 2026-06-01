@@ -4,9 +4,12 @@ import { GlassCard } from "@/components/GlassCard";
 import { GlowButton } from "@/components/GlowButton";
 import { analyseChart } from "@/lib/scanner.functions";
 import { useAuth } from "@/lib/auth-context";
-import { useRef, useState } from "react";
-import { Upload, Loader2, ScanLine, Lock, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, Loader2, ScanLine, Lock, ArrowUpRight, ArrowDownRight, History, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+
+const HISTORY_KEY = "sfx_scanner_history_v1";
+const MAX_HISTORY = 25;
 
 export const Route = createFileRoute("/_app/scanner")({
   head: () => ({ meta: [{ title: "AI Scanner — SFX" }] }),
