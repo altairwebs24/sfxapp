@@ -144,23 +144,26 @@ function LessonView({ slug, onBack }: { slug: string; onBack: () => void }) {
       <GlassCard>
         <h3 className="font-bold">Quiz</h3>
         <p className="text-xs text-muted-foreground mb-3">Pass to track your progress.</p>
-        {data.quizzes.map((q, qi) => (
-          <div key={q.id} className="mt-4">
+        {data.quizzes.map((q, qi) => {
+          const qid = q.id as string;
+          return (
+          <div key={qid} className="mt-4">
             <p className="text-sm font-semibold">{qi + 1}. {q.question}</p>
             <div className="mt-2 space-y-1.5">
               {(q.options as string[]).map((opt, oi) => (
                 <label key={oi} className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer text-sm transition ${
-                  answers[q.id] === oi ? "border-white bg-white/10" : "border-white/10 hover:border-white/30"
+                  answers[qid] === oi ? "border-white bg-white/10" : "border-white/10 hover:border-white/30"
                 }`}>
-                  <input type="radio" name={q.id} className="accent-white"
-                    checked={answers[q.id] === oi}
-                    onChange={() => setAnswers((a) => ({ ...a, [q.id]: oi }))} />
+                  <input type="radio" name={qid} className="accent-white"
+                    checked={answers[qid] === oi}
+                    onChange={() => setAnswers((a) => ({ ...a, [qid]: oi }))} />
                   {opt}
                 </label>
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
         {result && (
           <div className="mt-4 rounded-xl bg-white/5 px-4 py-3 text-center">
             <p className="text-lg font-bold">{result.score}%</p>
