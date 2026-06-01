@@ -12,19 +12,19 @@ const SYS = `You are a precise trading-chart inspector. Given ONE chart screensh
 3) The directional bias from the last 5 visible candles + EMA structure: BUY (bullish) or SELL (bearish).
 Be decisive — never hedge. ONLY reply via the provided tool.`;
 
-type Cfg = { td: string; point: number; tp: number; sl: number; digits: number };
+type Cfg = { fh: string; crypto?: boolean; point: number; tp: number; sl: number; digits: number };
 const PAIR_CONFIG: Record<string, Cfg> = {
-  EURUSD: { td: "EUR/USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  GBPUSD: { td: "GBP/USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  USDJPY: { td: "USD/JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
-  AUDUSD: { td: "AUD/USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  NZDUSD: { td: "NZD/USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  USDCAD: { td: "USD/CAD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  USDCHF: { td: "USD/CHF", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  EURJPY: { td: "EUR/JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
-  GBPJPY: { td: "GBP/JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
-  XAUUSD: { td: "XAU/USD", point: 0.01,    tp: 4300, sl: 2000, digits: 2 },
-  BTCUSD: { td: "BTC/USD", point: 0.01,    tp: 200000, sl: 100000, digits: 2 },
+  EURUSD: { fh: "OANDA:EUR_USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  GBPUSD: { fh: "OANDA:GBP_USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  USDJPY: { fh: "OANDA:USD_JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
+  AUDUSD: { fh: "OANDA:AUD_USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  NZDUSD: { fh: "OANDA:NZD_USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  USDCAD: { fh: "OANDA:USD_CAD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  USDCHF: { fh: "OANDA:USD_CHF", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  EURJPY: { fh: "OANDA:EUR_JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
+  GBPJPY: { fh: "OANDA:GBP_JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
+  XAUUSD: { fh: "OANDA:XAU_USD", point: 0.01,    tp: 4300, sl: 2000, digits: 2 },
+  BTCUSD: { fh: "BINANCE:BTCUSDT", crypto: true, point: 0.01, tp: 200000, sl: 100000, digits: 2 },
 };
 
 export const analyseChart = createServerFn({ method: "POST" })
