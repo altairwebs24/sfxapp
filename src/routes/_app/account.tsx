@@ -74,10 +74,11 @@ function AccountPage() {
     const patch = tab === "mt5"
       ? { mt5_login: mt5.login, mt5_password: mt5.password, mt5_broker: mt5.broker, mt5_server: mt5.server }
       : { mt4_login: mt4.login, mt4_password: mt4.password, mt4_broker: mt4.broker, mt4_server: mt4.server };
-    const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    const { error } = await supabase
+      .from("trading_credentials")
+      .upsert({ user_id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
     setSavingMT(false);
     if (error) { toast.error(error.message); return; }
-    await refreshProfile();
     toast.success(`${tab.toUpperCase()} account saved`);
   };
 
