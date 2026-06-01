@@ -89,13 +89,16 @@ export const analyseChart = createServerFn({ method: "POST" })
       return { ok: false as const, error: `Detected "${parsed.pair}" but it's not supported yet. Supported: ${Object.keys(PAIR_CONFIG).join(", ")}.` };
     }
 
-    // Live price (scanner-only TwelveData key)
-    const priceRes = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(cfg.td)}&apikey=${getScannerKey()}`);
+    // Live price via Finnhub last 1m candle
+    const to = Math.floor(Date.now() / 1000);
+    const from = to - 60 * 10;
+    const kind = cfg.crypto ? "crypto" : "forex";
+    const priceRes = await fetch(`https://finnhub.io/api/v1/${kind}/candle?symbol=${encodeURIComponent(cfg.fh)}&resolution=1&from=${from}&to=${to}&token=${getFinnhubKey()}`);
     const priceJson = await priceRes.json();
-    if (priceJson.status === "error" || !priceJson.price) {
-      return { ok: false as const, error: `Live price unavailable: ${priceJson.message ?? "unknown error"}` };
+    if (priceJson.s !== "ok" || !Array.isArray(priceJson.c) || !priceJson.c.length) {
+      return { ok: false as const, error: `Live price unavailable: ${priceJson.s ?? "no_data"}` };
     }
-    const entry = parseFloat(priceJson.price);
+    const entry = priceJson.c[priceJson.c.length - 1];
     const tpDist = cfg.point * cfg.tp;
     const slDist = cfg.point * cfg.sl;
     const tp = parsed.bias === "BUY" ? entry + tpDist : entry - tpDist;
