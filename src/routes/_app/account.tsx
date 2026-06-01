@@ -4,7 +4,7 @@ import { GlowButton } from "@/components/GlowButton";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Camera, Loader2, LogOut, Mail, Phone, Save, User as UserIcon, Edit2, Check } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/account")({
@@ -21,19 +21,24 @@ function AccountPage() {
   const [tab, setTab] = useState<"mt4" | "mt5">("mt5");
   const [savingMT, setSavingMT] = useState(false);
 
-  const [mt5, setMt5] = useState({
-    login: profile?.["mt5_login" as keyof typeof profile] as string ?? "",
-    password: profile?.["mt5_password" as keyof typeof profile] as string ?? "",
-    broker: profile?.["mt5_broker" as keyof typeof profile] as string ?? "",
-    server: profile?.["mt5_server" as keyof typeof profile] as string ?? "",
-  });
-  const [mt4, setMt4] = useState({
-    login: profile?.["mt4_login" as keyof typeof profile] as string ?? "",
-    password: profile?.["mt4_password" as keyof typeof profile] as string ?? "",
-    broker: profile?.["mt4_broker" as keyof typeof profile] as string ?? "",
-    server: profile?.["mt4_server" as keyof typeof profile] as string ?? "",
-  });
+  const [mt5, setMt5] = useState({ login: "", password: "", broker: "", server: "" });
+  const [mt4, setMt4] = useState({ login: "", password: "", broker: "", server: "" });
   const [showPw, setShowPw] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("trading_credentials")
+        .select("mt4_login, mt4_password, mt4_broker, mt4_server, mt5_login, mt5_password, mt5_broker, mt5_server")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        setMt4({ login: data.mt4_login ?? "", password: data.mt4_password ?? "", broker: data.mt4_broker ?? "", server: data.mt4_server ?? "" });
+        setMt5({ login: data.mt5_login ?? "", password: data.mt5_password ?? "", broker: data.mt5_broker ?? "", server: data.mt5_server ?? "" });
+      }
+    })();
+  }, [user]);
 
   const onAvatarPick = async (file: File) => {
     if (!user) return;
@@ -69,10 +74,11 @@ function AccountPage() {
     const patch = tab === "mt5"
       ? { mt5_login: mt5.login, mt5_password: mt5.password, mt5_broker: mt5.broker, mt5_server: mt5.server }
       : { mt4_login: mt4.login, mt4_password: mt4.password, mt4_broker: mt4.broker, mt4_server: mt4.server };
-    const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    const { error } = await supabase
+      .from("trading_credentials")
+      .upsert({ user_id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
     setSavingMT(false);
     if (error) { toast.error(error.message); return; }
-    await refreshProfile();
     toast.success(`${tab.toUpperCase()} account saved`);
   };
 

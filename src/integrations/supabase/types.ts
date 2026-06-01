@@ -218,14 +218,6 @@ export type Database = {
           education_enrolled: boolean
           email: string | null
           id: string
-          mt4_broker: string | null
-          mt4_login: string | null
-          mt4_password: string | null
-          mt4_server: string | null
-          mt5_broker: string | null
-          mt5_login: string | null
-          mt5_password: string | null
-          mt5_server: string | null
           name: string | null
           phone: string | null
           plan: Database["public"]["Enums"]["plan_tier"]
@@ -241,14 +233,6 @@ export type Database = {
           education_enrolled?: boolean
           email?: string | null
           id: string
-          mt4_broker?: string | null
-          mt4_login?: string | null
-          mt4_password?: string | null
-          mt4_server?: string | null
-          mt5_broker?: string | null
-          mt5_login?: string | null
-          mt5_password?: string | null
-          mt5_server?: string | null
           name?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
@@ -264,14 +248,6 @@ export type Database = {
           education_enrolled?: boolean
           email?: string | null
           id?: string
-          mt4_broker?: string | null
-          mt4_login?: string | null
-          mt4_password?: string | null
-          mt4_server?: string | null
-          mt5_broker?: string | null
-          mt5_login?: string | null
-          mt5_password?: string | null
-          mt5_server?: string | null
           name?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
@@ -324,6 +300,45 @@ export type Database = {
         }
         Relationships: []
       }
+      trading_credentials: {
+        Row: {
+          mt4_broker: string | null
+          mt4_login: string | null
+          mt4_password: string | null
+          mt4_server: string | null
+          mt5_broker: string | null
+          mt5_login: string | null
+          mt5_password: string | null
+          mt5_server: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          mt4_broker?: string | null
+          mt4_login?: string | null
+          mt4_password?: string | null
+          mt4_server?: string | null
+          mt5_broker?: string | null
+          mt5_login?: string | null
+          mt5_password?: string | null
+          mt5_server?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          mt4_broker?: string | null
+          mt4_login?: string | null
+          mt4_password?: string | null
+          mt4_server?: string | null
+          mt5_broker?: string | null
+          mt5_login?: string | null
+          mt5_password?: string | null
+          mt5_server?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -344,7 +359,38 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      education_quizzes_public: {
+        Row: {
+          id: string | null
+          lesson_id: string | null
+          options: Json | null
+          order_index: number | null
+          question: string | null
+        }
+        Insert: {
+          id?: string | null
+          lesson_id?: string | null
+          options?: Json | null
+          order_index?: number | null
+          question?: string | null
+        }
+        Update: {
+          id?: string | null
+          lesson_id?: string | null
+          options?: Json | null
+          order_index?: number | null
+          question?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_quizzes_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "education_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
