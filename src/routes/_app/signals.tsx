@@ -2,13 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GlassCard } from "@/components/GlassCard";
-import { listSignals, PAIRS } from "@/lib/signals.functions";
+import { GlowButton } from "@/components/GlowButton";
+import { generatePairSignal, listSignals } from "@/lib/signals.functions";
+import { PAIRS } from "@/lib/market-pairs";
 import {
   ArrowDownRight, ArrowUpRight, TrendingUp, Loader2, RefreshCw,
-  DollarSign, PoundSterling, JapaneseYen, Bitcoin, Gem, BarChart3, X,
+  DollarSign, PoundSterling, JapaneseYen, Bitcoin, Gem, BarChart3, X, Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/signals")({
   head: () => ({ meta: [{ title: "Live Signals — SFX" }] }),
@@ -28,6 +31,7 @@ const PAIR_ICONS: Record<string, typeof DollarSign> = {
 
 function SignalsPage() {
   const fetchSignals = useServerFn(listSignals);
+  const generateSignal = useServerFn(generatePairSignal);
   const qc = useQueryClient();
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["signals"], queryFn: () => fetchSignals(), refetchInterval: 30_000,
@@ -35,6 +39,8 @@ function SignalsPage() {
 
   const [selected, setSelected] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [generatingPair, setGeneratingPair] = useState<string | null>(null);
+  const [generated, setGenerated] = useState<Record<string, GeneratedResult>>({});
 
   useEffect(() => {
     const ch = supabase.channel("signals-rt")
@@ -49,6 +55,21 @@ function SignalsPage() {
   const closed = signals.filter((s) => s.status !== "active");
 
   const selectedActive = selected ? active.filter((s) => s.pair === selected) : [];
+  const selectedGenerated = selected ? generated[selected] : null;
+
+  const generateForPair = async (pair: string) => {
+    setGeneratingPair(pair);
+    try {
+      const result = await generateSignal({ data: { pair } });
+      setGenerated((prev) => ({ ...prev, [pair]: result }));
+      if (result.ok) toast.success(`${pair} signal found`);
+      else toast.message(`No signal on ${pair}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Signal generation failed");
+    } finally {
+      setGeneratingPair(null);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -130,6 +151,14 @@ function SignalsPage() {
                 <X size={16} />
               </button>
             </div>
+            <GlowButton onClick={() => generateForPair(selected)} disabled={generatingPair === selected} className="w-full mb-4">
+              {generatingPair === selected ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />} Generate signal
+            </GlowButton>
+            {selectedGenerated && (
+              <div className="mb-3">
+                {selectedGenerated.ok ? <GeneratedSignalCard signal={selectedGenerated.signal} /> : <GlassCard><p className="text-sm text-white/60 text-center py-3">No signal</p></GlassCard>}
+              </div>
+            )}
             {selectedActive.length === 0 ? (
               <GlassCard><p className="text-sm text-white/60 text-center py-4">No active signal on {selected}. Scanner runs every few minutes.</p></GlassCard>
             ) : (
