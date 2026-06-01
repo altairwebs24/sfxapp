@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_app/scanner")({
 });
 
 type ScanOk = { ok: true; pair: string; timeframe: string; bias: "BUY" | "SELL"; notes: string; entry: number; tp: number; sl: number; digits: number };
+type HistoryItem = ScanOk & { id: string; at: string };
 
 function ScannerPage() {
   const { profile } = useAuth();
@@ -28,6 +29,29 @@ function ScannerPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanOk | null>(null);
   const [fileData, setFileData] = useState<{ base64: string; mime: string } | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) setHistory(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const pushHistory = (r: ScanOk) => {
+    const item: HistoryItem = { ...r, id: crypto.randomUUID(), at: new Date().toISOString() };
+    setHistory((prev) => {
+      const next = [item, ...prev].slice(0, MAX_HISTORY);
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    try { localStorage.removeItem(HISTORY_KEY); } catch {}
+  };
 
   const onPick = (f: File) => {
     if (f.size > 6_000_000) { toast.error("Image too large (max 6MB)"); return; }
