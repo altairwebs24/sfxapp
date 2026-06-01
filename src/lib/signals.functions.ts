@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { PAIRS, PAIR_IDS } from "@/lib/market-pairs";
+import { PAIR_IDS } from "@/lib/market-pairs";
 import { closeSignalAsAdmin, generateSignalForPair, refreshAllSignals } from "@/lib/signals.server";
 
 export const refreshSignals = createServerFn({ method: "POST" }).handler(async () => {
@@ -30,5 +30,3 @@ export const closeSignal = createServerFn({ method: "POST" })
     if (!roles?.some((r) => r.role === "admin")) throw new Error("Forbidden");
     return closeSignalAsAdmin(data.id, data.tpPercent);
   });
-
-export { PAIRS };
