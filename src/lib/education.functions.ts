@@ -22,7 +22,7 @@ export const getLesson = createServerFn({ method: "GET" })
       .from("education_lessons").select("*").eq("slug", data.slug).maybeSingle();
     if (!lesson) throw new Error("Lesson not found");
     const { data: quizzes } = await context.supabase
-      .from("education_quizzes").select("id, question, options, order_index")
+      .from("education_quizzes_public").select("id, question, options, order_index")
       .eq("lesson_id", lesson.id).order("order_index");
     return { lesson, quizzes: quizzes ?? [] };
   });
