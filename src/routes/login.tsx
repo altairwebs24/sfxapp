@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -13,11 +13,15 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const nav = useNavigate();
-  const [email, setEmail] = useState(localStorage.getItem("sfx:email") ?? "");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setEmail(localStorage.getItem("sfx:email") ?? "");
+  }, []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
