@@ -6,7 +6,7 @@ type Side = "BUY" | "SELL";
 type Setup = { side: Side; strategy: string; reason: string; score: number; bars: Bar[]; interval: string };
 
 function getTwelveDataKey() {
-  return process.env.TWELVEDATA_SIGNALS_KEY || process.env.TWELVEDATA_API_KEY || "71193c29f14e4d2e8226939d6a26f263";
+  return process.env.TWELVEDATA_SIGNALS_KEY || process.env.TWELVEDATA_API_KEY || "11bef1edd9e64026b1aab224a31695a4";
 }
 
 function ema(values: number[], period: number) {
