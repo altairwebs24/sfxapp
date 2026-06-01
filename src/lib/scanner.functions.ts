@@ -2,7 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const TD_SCANNER_KEY = process.env.TWELVEDATA_SCANNER_KEY || "11bef1edd9e64026b1aab224a31695a4";
+function getScannerKey() {
+  return process.env.TWELVEDATA_SCANNER_KEY || process.env.TWELVEDATA_API_KEY || "11bef1edd9e64026b1aab224a31695a4";
+}
 
 const SYS = `You are a precise trading-chart inspector. Given ONE chart screenshot, identify:
 1) The exact instrument symbol displayed (normalised to uppercase, no slash or hyphen). Examples: EURUSD, GBPUSD, USDJPY, AUDUSD, NZDUSD, USDCAD, USDCHF, EURJPY, GBPJPY, XAUUSD, BTCUSD.
@@ -88,7 +90,7 @@ export const analyseChart = createServerFn({ method: "POST" })
     }
 
     // Live price (scanner-only TwelveData key)
-    const priceRes = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(cfg.td)}&apikey=${TD_SCANNER_KEY}`);
+    const priceRes = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(cfg.td)}&apikey=${getScannerKey()}`);
     const priceJson = await priceRes.json();
     if (priceJson.status === "error" || !priceJson.price) {
       return { ok: false as const, error: `Live price unavailable: ${priceJson.message ?? "unknown error"}` };
