@@ -5,8 +5,8 @@ type Bar = { open: number; high: number; low: number; close: number; datetime?: 
 type Side = "BUY" | "SELL";
 type Setup = { side: Side; strategy: string; reason: string; score: number; bars: Bar[]; interval: string };
 
-function getTwelveDataKey() {
-  return process.env.TWELVEDATA_SIGNALS_KEY || process.env.TWELVEDATA_API_KEY || "11bef1edd9e64026b1aab224a31695a4";
+function getFinnhubKey() {
+  return process.env.FINNHUB_API_KEY || "d8er0opr01qub7kec8p0d8er0opr01qub7kec8pg";
 }
 
 function ema(values: number[], period: number) {
