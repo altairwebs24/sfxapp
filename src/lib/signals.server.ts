@@ -219,9 +219,9 @@ function liquidityImbalanceSetup(bars: Bar[], interval: string): Setup | null {
 
 async function selectBestSetup(p: PairCfg) {
   const [hourly, m15, m5] = await Promise.all([
-    fetchSeriesFull(p.symbol, "1h", 140),
-    fetchSeriesFull(p.symbol, "15min", 140),
-    fetchSeriesFull(p.symbol, "5min", 120),
+    fetchSeriesFull(p, "1h", 140),
+    fetchSeriesFull(p, "15min", 140),
+    fetchSeriesFull(p, "5min", 120),
   ]);
   const setups = [
     supportResistanceSetup(hourly, "1h"),
@@ -238,7 +238,7 @@ export async function generateSignalForPair(pair: string) {
   if (!p) throw new Error("Unsupported pair");
   const setup = await selectBestSetup(p);
   if (!setup) return { ok: false as const, pair: p.pair, message: "No signal" };
-  const entry = await fetchLivePrice(p.symbol);
+  const entry = await fetchLivePrice(p);
   return { ok: true as const, signal: makeSignal(p, setup, entry) };
 }
 
