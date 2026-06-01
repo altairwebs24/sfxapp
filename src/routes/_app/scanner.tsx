@@ -71,6 +71,7 @@ function ScannerPage() {
       const res = await analyse({ data: { imageBase64: fileData.base64, mimeType: fileData.mime, note: note || undefined } });
       if (!res.ok) { toast.error(res.error); return; }
       setResult(res);
+      pushHistory(res);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Analysis failed");
     } finally { setLoading(false); }
