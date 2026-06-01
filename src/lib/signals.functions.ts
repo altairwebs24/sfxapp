@@ -29,13 +29,33 @@ function ema(values: number[], period: number) {
   return out;
 }
 
-async function fetchSeries(symbol: string) {
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1h&outputsize=60&apikey=${TD_SIGNALS_KEY}`;
+function rsi(values: number[], period = 14) {
+  if (values.length < period + 1) return NaN;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = values[i] - values[i - 1];
+    if (d >= 0) gains += d; else losses -= d;
+  }
+  let avgG = gains / period, avgL = losses / period;
+  for (let i = period + 1; i < values.length; i++) {
+    const d = values[i] - values[i - 1];
+    avgG = (avgG * (period - 1) + Math.max(d, 0)) / period;
+    avgL = (avgL * (period - 1) + Math.max(-d, 0)) / period;
+  }
+  if (avgL === 0) return 100;
+  const rs = avgG / avgL;
+  return 100 - 100 / (1 + rs);
+}
+
+async function fetchSeriesFull(symbol: string) {
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1h&outputsize=120&apikey=${TD_SIGNALS_KEY}`;
   const res = await fetch(url);
   const json = await res.json();
   if (json.status === "error") throw new Error(`TwelveData ${symbol}: ${json.message}`);
-  const values = (json.values as Array<{ close: string }>) || [];
-  return values.reverse().map((v) => parseFloat(v.close));
+  const values = (json.values as Array<{ open: string; high: string; low: string; close: string }>) || [];
+  return values.reverse().map((v) => ({
+    open: parseFloat(v.open), high: parseFloat(v.high), low: parseFloat(v.low), close: parseFloat(v.close),
+  }));
 }
 
 async function fetchLivePrice(symbol: string): Promise<number> {
@@ -49,18 +69,35 @@ export const refreshSignals = createServerFn({ method: "POST" }).handler(async (
   const results: { pair: string; action: string; error?: string }[] = [];
   for (const p of PAIRS) {
     try {
-      const closes = await fetchSeries(p.symbol);
-      if (closes.length < 25) { results.push({ pair: p.pair, action: "skip:no_data" }); continue; }
+      const bars = await fetchSeriesFull(p.symbol);
+      if (bars.length < 30) { results.push({ pair: p.pair, action: "skip:no_data" }); continue; }
+      const closes = bars.map((b) => b.close);
       const e9 = ema(closes, 9);
       const e21 = ema(closes, 21);
+      const e50 = ema(closes, 50);
       const prev9 = e9.at(-2)!; const prev21 = e21.at(-2)!;
       const cur9 = e9.at(-1)!; const cur21 = e21.at(-1)!;
+      const lastBar = bars.at(-1)!;
+      const r = rsi(closes, 14);
+      const range20High = Math.max(...bars.slice(-20).map((b) => b.high));
+      const range20Low = Math.min(...bars.slice(-20).map((b) => b.low));
+      const bodyStrength = Math.abs(lastBar.close - lastBar.open) / Math.max(lastBar.high - lastBar.low, 1e-9);
 
+      // Internal 5-pillar confluence (proprietary): trend cross, higher-tf trend,
+      // momentum (RSI), structure break (20-bar range), candle body strength.
       let side: "BUY" | "SELL" | null = null;
-      let reason = "";
-      if (prev9 <= prev21 && cur9 > cur21) { side = "BUY"; reason = "EMA9 crossed above EMA21 (H1)"; }
-      else if (prev9 >= prev21 && cur9 < cur21) { side = "SELL"; reason = "EMA9 crossed below EMA21 (H1)"; }
-      if (!side) { results.push({ pair: p.pair, action: "no_crossover" }); continue; }
+      const reasons: string[] = [];
+      const trendUp = cur9 > cur21 && (e50.at(-1) ?? 0) <= cur21;
+      const trendDn = cur9 < cur21 && (e50.at(-1) ?? Infinity) >= cur21;
+      if (prev9 <= prev21 && cur9 > cur21 && trendUp && r > 50 && r < 75 && lastBar.close > range20High * 0.999 && bodyStrength > 0.55) {
+        side = "BUY";
+        reasons.push("EMA9>EMA21 cross", "RSI bullish", "20-bar high break", "strong body");
+      } else if (prev9 >= prev21 && cur9 < cur21 && trendDn && r < 50 && r > 25 && lastBar.close < range20Low * 1.001 && bodyStrength > 0.55) {
+        side = "SELL";
+        reasons.push("EMA9<EMA21 cross", "RSI bearish", "20-bar low break", "strong body");
+      }
+      if (!side) { results.push({ pair: p.pair, action: "no_confluence" }); continue; }
+      const reason = reasons.join(" • ");
 
       const { data: active } = await supabaseAdmin
         .from("signals").select("id").eq("pair", p.pair).eq("status", "active").limit(1);
