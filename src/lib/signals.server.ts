@@ -5,8 +5,8 @@ type Bar = { open: number; high: number; low: number; close: number; datetime?: 
 type Side = "BUY" | "SELL";
 type Setup = { side: Side; strategy: string; reason: string; score: number; bars: Bar[]; interval: string };
 
-function getFinnhubKey() {
-  return process.env.FINNHUB_API_KEY || "d8er0opr01qub7kec8p0d8er0opr01qub7kec8pg";
+function getTwelveDataKey() {
+  return process.env.TWELVEDATA_SIGNALS_KEY || process.env.TWELVEDATA_API_KEY || "11bef1edd9e64026b1aab224a31695a4";
 }
 
 function ema(values: number[], period: number) {
@@ -54,34 +54,26 @@ function bodyStrength(bar: Bar) {
   return Math.abs(bar.close - bar.open) / Math.max(bar.high - bar.low, 1e-9);
 }
 
-const RESOLUTION_MAP: Record<string, string> = { "1h": "60", "15min": "15", "5min": "5", "1min": "1" };
-const RESOLUTION_SECONDS: Record<string, number> = { "1h": 3600, "15min": 900, "5min": 300, "1min": 60 };
-
-async function fetchSeriesFull(p: PairCfg, interval = "1h", outputsize = 140) {
-  const resolution = RESOLUTION_MAP[interval] ?? "60";
-  const secs = RESOLUTION_SECONDS[interval] ?? 3600;
-  const to = Math.floor(Date.now() / 1000);
-  const from = to - secs * outputsize * 3;
-  const kind = p.isCrypto ? "crypto" : "forex";
-  const url = `https://finnhub.io/api/v1/${kind}/candle?symbol=${encodeURIComponent(p.finnhubSymbol)}&resolution=${resolution}&from=${from}&to=${to}&token=${getFinnhubKey()}`;
+async function fetchSeriesFull(symbol: string, interval = "1h", outputsize = 140) {
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=${interval}&outputsize=${outputsize}&apikey=${getTwelveDataKey()}`;
   const res = await fetch(url);
   const json = await res.json();
-  if (json.s !== "ok" || !Array.isArray(json.c)) throw new Error(`Finnhub ${p.symbol}: ${json.s ?? "no_data"}`);
-  const bars: Bar[] = json.c.map((_: number, i: number) => ({
-    datetime: new Date(json.t[i] * 1000).toISOString(),
-    open: json.o[i],
-    high: json.h[i],
-    low: json.l[i],
-    close: json.c[i],
-  })).filter((v: Bar) => Number.isFinite(v.close));
-  return bars.slice(-outputsize);
+  if (json.status === "error") throw new Error(`TwelveData ${symbol}: ${json.message}`);
+  const values = (json.values as Array<{ datetime?: string; open: string; high: string; low: string; close: string }>) || [];
+  return values.reverse().map((v) => ({
+    datetime: v.datetime,
+    open: parseFloat(v.open),
+    high: parseFloat(v.high),
+    low: parseFloat(v.low),
+    close: parseFloat(v.close),
+  })).filter((v) => Number.isFinite(v.close));
 }
 
-async function fetchLivePrice(p: PairCfg): Promise<number> {
-  const bars = await fetchSeriesFull(p, "1min", 5);
-  const last = bars.at(-1);
-  if (!last) throw new Error("no price");
-  return last.close;
+async function fetchLivePrice(symbol: string): Promise<number> {
+  const res = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}&apikey=${getTwelveDataKey()}`);
+  const j = await res.json();
+  if (j.status === "error" || !j.price) throw new Error(j.message ?? "no price");
+  return parseFloat(j.price);
 }
 
 function makeSignal(p: PairCfg, setup: Setup, entry: number) {
@@ -219,9 +211,9 @@ function liquidityImbalanceSetup(bars: Bar[], interval: string): Setup | null {
 
 async function selectBestSetup(p: PairCfg) {
   const [hourly, m15, m5] = await Promise.all([
-    fetchSeriesFull(p, "1h", 140),
-    fetchSeriesFull(p, "15min", 140),
-    fetchSeriesFull(p, "5min", 120),
+    fetchSeriesFull(p.symbol, "1h", 140),
+    fetchSeriesFull(p.symbol, "15min", 140),
+    fetchSeriesFull(p.symbol, "5min", 120),
   ]);
   const setups = [
     supportResistanceSetup(hourly, "1h"),
@@ -238,7 +230,7 @@ export async function generateSignalForPair(pair: string) {
   if (!p) throw new Error("Unsupported pair");
   const setup = await selectBestSetup(p);
   if (!setup) return { ok: false as const, pair: p.pair, message: "No signal" };
-  const entry = await fetchLivePrice(p);
+  const entry = await fetchLivePrice(p.symbol);
   return { ok: true as const, signal: makeSignal(p, setup, entry) };
 }
 
