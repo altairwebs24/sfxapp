@@ -250,6 +250,7 @@ export async function generateSignalForPair(pair: string) {
   const setup = await selectBestSetup(p);
   if (!setup) return { ok: false as const, pair: p.pair, message: "No signal" };
   const entry = await fetchLivePrice(p);
+  if (entry == null) return { ok: false as const, pair: p.pair, message: "No signal" };
   return { ok: true as const, signal: makeSignal(p, setup, entry) };
 }
 
