@@ -4,7 +4,7 @@ import { GlowButton } from "@/components/GlowButton";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Camera, Loader2, LogOut, Mail, Phone, Save, User as UserIcon, Edit2, Check } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/account")({
