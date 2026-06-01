@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-function getScannerKey() {
-  return process.env.TWELVEDATA_SCANNER_KEY || process.env.TWELVEDATA_API_KEY || "11bef1edd9e64026b1aab224a31695a4";
+function getFinnhubKey() {
+  return process.env.FINNHUB_API_KEY || "d8er0opr01qub7kec8p0d8er0opr01qub7kec8pg";
 }
 
 const SYS = `You are a precise trading-chart inspector. Given ONE chart screenshot, identify:
@@ -12,19 +12,19 @@ const SYS = `You are a precise trading-chart inspector. Given ONE chart screensh
 3) The directional bias from the last 5 visible candles + EMA structure: BUY (bullish) or SELL (bearish).
 Be decisive — never hedge. ONLY reply via the provided tool.`;
 
-type Cfg = { td: string; point: number; tp: number; sl: number; digits: number };
+type Cfg = { fh: string; crypto?: boolean; point: number; tp: number; sl: number; digits: number };
 const PAIR_CONFIG: Record<string, Cfg> = {
-  EURUSD: { td: "EUR/USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  GBPUSD: { td: "GBP/USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  USDJPY: { td: "USD/JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
-  AUDUSD: { td: "AUD/USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  NZDUSD: { td: "NZD/USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  USDCAD: { td: "USD/CAD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  USDCHF: { td: "USD/CHF", point: 0.00001, tp: 70, sl: 30, digits: 5 },
-  EURJPY: { td: "EUR/JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
-  GBPJPY: { td: "GBP/JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
-  XAUUSD: { td: "XAU/USD", point: 0.01,    tp: 4300, sl: 2000, digits: 2 },
-  BTCUSD: { td: "BTC/USD", point: 0.01,    tp: 200000, sl: 100000, digits: 2 },
+  EURUSD: { fh: "OANDA:EUR_USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  GBPUSD: { fh: "OANDA:GBP_USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  USDJPY: { fh: "OANDA:USD_JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
+  AUDUSD: { fh: "OANDA:AUD_USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  NZDUSD: { fh: "OANDA:NZD_USD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  USDCAD: { fh: "OANDA:USD_CAD", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  USDCHF: { fh: "OANDA:USD_CHF", point: 0.00001, tp: 70, sl: 30, digits: 5 },
+  EURJPY: { fh: "OANDA:EUR_JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
+  GBPJPY: { fh: "OANDA:GBP_JPY", point: 0.001,   tp: 70, sl: 30, digits: 3 },
+  XAUUSD: { fh: "OANDA:XAU_USD", point: 0.01,    tp: 4300, sl: 2000, digits: 2 },
+  BTCUSD: { fh: "BINANCE:BTCUSDT", crypto: true, point: 0.01, tp: 200000, sl: 100000, digits: 2 },
 };
 
 export const analyseChart = createServerFn({ method: "POST" })
@@ -89,13 +89,16 @@ export const analyseChart = createServerFn({ method: "POST" })
       return { ok: false as const, error: `Detected "${parsed.pair}" but it's not supported yet. Supported: ${Object.keys(PAIR_CONFIG).join(", ")}.` };
     }
 
-    // Live price (scanner-only TwelveData key)
-    const priceRes = await fetch(`https://api.twelvedata.com/price?symbol=${encodeURIComponent(cfg.td)}&apikey=${getScannerKey()}`);
+    // Live price via Finnhub last 1m candle
+    const to = Math.floor(Date.now() / 1000);
+    const from = to - 60 * 10;
+    const kind = cfg.crypto ? "crypto" : "forex";
+    const priceRes = await fetch(`https://finnhub.io/api/v1/${kind}/candle?symbol=${encodeURIComponent(cfg.fh)}&resolution=1&from=${from}&to=${to}&token=${getFinnhubKey()}`);
     const priceJson = await priceRes.json();
-    if (priceJson.status === "error" || !priceJson.price) {
-      return { ok: false as const, error: `Live price unavailable: ${priceJson.message ?? "unknown error"}` };
+    if (priceJson.s !== "ok" || !Array.isArray(priceJson.c) || !priceJson.c.length) {
+      return { ok: false as const, error: `Live price unavailable: ${priceJson.s ?? "no_data"}` };
     }
-    const entry = parseFloat(priceJson.price);
+    const entry = priceJson.c[priceJson.c.length - 1];
     const tpDist = cfg.point * cfg.tp;
     const slDist = cfg.point * cfg.sl;
     const tp = parsed.bias === "BUY" ? entry + tpDist : entry - tpDist;
