@@ -57,42 +57,31 @@ function bodyStrength(bar: Bar) {
 const RESOLUTION_MAP: Record<string, string> = { "1h": "60", "15min": "15", "5min": "5", "1min": "1" };
 const RESOLUTION_SECONDS: Record<string, number> = { "1h": 3600, "15min": 900, "5min": 300, "1min": 60 };
 
-async function fetchSeriesFull(p: PairCfg, interval = "1h", outputsize = 140): Promise<Bar[]> {
+async function fetchSeriesFull(p: PairCfg, interval = "1h", outputsize = 140) {
   const resolution = RESOLUTION_MAP[interval] ?? "60";
   const secs = RESOLUTION_SECONDS[interval] ?? 3600;
   const to = Math.floor(Date.now() / 1000);
   const from = to - secs * outputsize * 3;
   const kind = p.isCrypto ? "crypto" : "forex";
   const url = `https://finnhub.io/api/v1/${kind}/candle?symbol=${encodeURIComponent(p.finnhubSymbol)}&resolution=${resolution}&from=${from}&to=${to}&token=${getFinnhubKey()}`;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) {
-      console.warn(`Finnhub ${p.symbol} ${interval}: HTTP ${res.status}`);
-      return [];
-    }
-    const json = await res.json();
-    if (json.s !== "ok" || !Array.isArray(json.c) || !json.c.length) {
-      console.warn(`Finnhub ${p.symbol} ${interval}: ${json.s ?? "no_data"}`);
-      return [];
-    }
-    const bars: Bar[] = json.c.map((_: number, i: number) => ({
-      datetime: new Date(json.t[i] * 1000).toISOString(),
-      open: json.o[i],
-      high: json.h[i],
-      low: json.l[i],
-      close: json.c[i],
-    })).filter((v: Bar) => Number.isFinite(v.close));
-    return bars.slice(-outputsize);
-  } catch (e) {
-    console.warn(`Finnhub ${p.symbol} ${interval} fetch failed:`, e);
-    return [];
-  }
+  const res = await fetch(url);
+  const json = await res.json();
+  if (json.s !== "ok" || !Array.isArray(json.c)) throw new Error(`Finnhub ${p.symbol}: ${json.s ?? "no_data"}`);
+  const bars: Bar[] = json.c.map((_: number, i: number) => ({
+    datetime: new Date(json.t[i] * 1000).toISOString(),
+    open: json.o[i],
+    high: json.h[i],
+    low: json.l[i],
+    close: json.c[i],
+  })).filter((v: Bar) => Number.isFinite(v.close));
+  return bars.slice(-outputsize);
 }
 
-async function fetchLivePrice(p: PairCfg): Promise<number | null> {
+async function fetchLivePrice(p: PairCfg): Promise<number> {
   const bars = await fetchSeriesFull(p, "1min", 5);
   const last = bars.at(-1);
-  return last ? last.close : null;
+  if (!last) throw new Error("no price");
+  return last.close;
 }
 
 function makeSignal(p: PairCfg, setup: Setup, entry: number) {
@@ -250,7 +239,6 @@ export async function generateSignalForPair(pair: string) {
   const setup = await selectBestSetup(p);
   if (!setup) return { ok: false as const, pair: p.pair, message: "No signal" };
   const entry = await fetchLivePrice(p);
-  if (entry == null) return { ok: false as const, pair: p.pair, message: "No signal" };
   return { ok: true as const, signal: makeSignal(p, setup, entry) };
 }
 
