@@ -4,9 +4,12 @@ import { GlassCard } from "@/components/GlassCard";
 import { GlowButton } from "@/components/GlowButton";
 import { analyseChart } from "@/lib/scanner.functions";
 import { useAuth } from "@/lib/auth-context";
-import { useRef, useState } from "react";
-import { Upload, Loader2, ScanLine, Lock, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, Loader2, ScanLine, Lock, ArrowUpRight, ArrowDownRight, History, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+
+const HISTORY_KEY = "sfx_scanner_history_v1";
+const MAX_HISTORY = 25;
 
 export const Route = createFileRoute("/_app/scanner")({
   head: () => ({ meta: [{ title: "AI Scanner — SFX" }] }),
@@ -14,6 +17,7 @@ export const Route = createFileRoute("/_app/scanner")({
 });
 
 type ScanOk = { ok: true; pair: string; timeframe: string; bias: "BUY" | "SELL"; notes: string; entry: number; tp: number; sl: number; digits: number };
+type HistoryItem = ScanOk & { id: string; at: string };
 
 function ScannerPage() {
   const { profile } = useAuth();
@@ -25,6 +29,29 @@ function ScannerPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanOk | null>(null);
   const [fileData, setFileData] = useState<{ base64: string; mime: string } | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) setHistory(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const pushHistory = (r: ScanOk) => {
+    const item: HistoryItem = { ...r, id: crypto.randomUUID(), at: new Date().toISOString() };
+    setHistory((prev) => {
+      const next = [item, ...prev].slice(0, MAX_HISTORY);
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    try { localStorage.removeItem(HISTORY_KEY); } catch {}
+  };
 
   const onPick = (f: File) => {
     if (f.size > 6_000_000) { toast.error("Image too large (max 6MB)"); return; }
@@ -44,6 +71,7 @@ function ScannerPage() {
       const res = await analyse({ data: { imageBase64: fileData.base64, mimeType: fileData.mime, note: note || undefined } });
       if (!res.ok) { toast.error(res.error); return; }
       setResult(res);
+      pushHistory(res);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Analysis failed");
     } finally { setLoading(false); }
@@ -62,10 +90,57 @@ function ScannerPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-glow">AI Chart Scanner</h1>
-        <p className="text-xs text-muted-foreground">Upload a chart — AI reads pair + timeframe, live price from TwelveData, Entry/TP/SL in seconds.</p>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-glow">AI Chart Scanner</h1>
+          <p className="text-xs text-muted-foreground">Upload a chart — AI reads pair + timeframe, live price from TwelveData, Entry/TP/SL in seconds.</p>
+        </div>
+        <button
+          onClick={() => setShowHistory((v) => !v)}
+          className="shrink-0 glass rounded-full px-3 py-2 text-xs flex items-center gap-1 border border-white/10"
+          aria-label="Toggle history"
+        >
+          <History size={14} /> History {history.length > 0 && <span className="text-primary">({history.length})</span>}
+        </button>
       </div>
+
+      {showHistory && (
+        <GlassCard className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">Past scans</p>
+            {history.length > 0 && (
+              <button onClick={clearHistory} className="text-[11px] text-destructive flex items-center gap-1">
+                <Trash2 size={12} /> Clear
+              </button>
+            )}
+          </div>
+          {history.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No past scans yet. Analyse a chart to start your history.</p>
+          ) : (
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {history.map((h) => (
+                <div key={h.id} className="glass rounded-xl p-3 flex items-center gap-3 border border-white/5">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${h.bias === "BUY" ? "bg-primary/20" : "bg-destructive/20"}`}>
+                    {h.bias === "BUY" ? <ArrowUpRight size={16} className="text-primary" /> : <ArrowDownRight size={16} className="text-destructive" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-sm">{h.pair}</p>
+                      <p className="text-[10px] text-muted-foreground">{new Date(h.at).toLocaleString()}</p>
+                    </div>
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{h.timeframe} · {h.bias}</p>
+                    <div className="grid grid-cols-3 gap-2 mt-1 font-mono text-[11px]">
+                      <span>E <span className="text-primary">{h.entry.toFixed(h.digits)}</span></span>
+                      <span>TP <span className="text-primary">{h.tp.toFixed(h.digits)}</span></span>
+                      <span>SL <span className="text-destructive">{h.sl.toFixed(h.digits)}</span></span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </GlassCard>
+      )}
 
       <GlassCard>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && onPick(e.target.files[0])} />
