@@ -29,13 +29,33 @@ function ema(values: number[], period: number) {
   return out;
 }
 
-async function fetchSeries(symbol: string) {
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1h&outputsize=60&apikey=${TD_SIGNALS_KEY}`;
+function rsi(values: number[], period = 14) {
+  if (values.length < period + 1) return NaN;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = values[i] - values[i - 1];
+    if (d >= 0) gains += d; else losses -= d;
+  }
+  let avgG = gains / period, avgL = losses / period;
+  for (let i = period + 1; i < values.length; i++) {
+    const d = values[i] - values[i - 1];
+    avgG = (avgG * (period - 1) + Math.max(d, 0)) / period;
+    avgL = (avgL * (period - 1) + Math.max(-d, 0)) / period;
+  }
+  if (avgL === 0) return 100;
+  const rs = avgG / avgL;
+  return 100 - 100 / (1 + rs);
+}
+
+async function fetchSeriesFull(symbol: string) {
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1h&outputsize=120&apikey=${TD_SIGNALS_KEY}`;
   const res = await fetch(url);
   const json = await res.json();
   if (json.status === "error") throw new Error(`TwelveData ${symbol}: ${json.message}`);
-  const values = (json.values as Array<{ close: string }>) || [];
-  return values.reverse().map((v) => parseFloat(v.close));
+  const values = (json.values as Array<{ open: string; high: string; low: string; close: string }>) || [];
+  return values.reverse().map((v) => ({
+    open: parseFloat(v.open), high: parseFloat(v.high), low: parseFloat(v.low), close: parseFloat(v.close),
+  }));
 }
 
 async function fetchLivePrice(symbol: string): Promise<number> {
