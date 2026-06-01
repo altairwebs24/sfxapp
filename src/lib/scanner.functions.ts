@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-function getScannerKey() {
-  return process.env.TWELVEDATA_SCANNER_KEY || process.env.TWELVEDATA_API_KEY || "11bef1edd9e64026b1aab224a31695a4";
+function getFinnhubKey() {
+  return process.env.FINNHUB_API_KEY || "d8er0opr01qub7kec8p0d8er0opr01qub7kec8pg";
 }
 
 const SYS = `You are a precise trading-chart inspector. Given ONE chart screenshot, identify:
