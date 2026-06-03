@@ -35,7 +35,7 @@ export const analyseChart = createServerFn({ method: "POST" })
     note: z.string().max(500).optional(),
   }).parse(d))
   .handler(async ({ data }) => {
-    const aiKey = process.env.LOVABLE_API_KEY;
+    const aiKey = process.env.LOVABLE_API_KEY || process.env.AI_GATEWAY_API_KEY;
     if (!aiKey) return { ok: false as const, error: "AI not configured" };
 
     const dataUrl = `data:${data.mimeType};base64,${data.imageBase64}`;
